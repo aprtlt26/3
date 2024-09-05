@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fluid Particle System with White-Yellow Points and Green Noise</title>
+    <title>Optimized Fluid Particle System</title>
     <style>
         body, html {
             margin: 0;
             padding: 0;
             overflow: hidden;
-            background: gray; /* Fondo gris */
+            background: black;
         }
     </style>
 </head>
@@ -17,7 +17,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
     <script>
         let inc = 0.05;
-        let scl = 10;
+        let scl = 15; // Incrementar la escala para menos partículas
         let cols, rows;
         let zoff = 0;
         let particles = [];
@@ -36,15 +36,13 @@
             globalReverb = new p5.Reverb();
             globalReverb.set(12, 8); 
 
-            // Configurar ruido verde modulado por el touch
+            // Configurar ruido verde
             noiseOscillator = new p5.Noise('pink');
             let lowPassFilter = new p5.LowPass();
             lowPassFilter.freq(500); 
             noiseOscillator.disconnect();
             noiseOscillator.connect(lowPassFilter);
-
-            // Ruido verde se activa solo con touch
-            noiseOscillator.amp(0, 1);  // Inicialmente en silencio
+            noiseOscillator.amp(0.5, 1);
 
             lfo = new p5.Oscillator('sine');
             lfo.freq(random(1 / 7, 1 / 5)); 
@@ -52,17 +50,17 @@
             lfo.amp(0.8);  
             lfo.start();
 
-            for (let i = 0; i < 500; i++) {
+            for (let i = 0; i < 300; i++) { // Reducir el número de partículas
                 particles[i] = new Particle();
             }
 
-            background(100);  // Fondo gris
+            background(0);
         }
 
         function draw() {
             if (!audioStarted) return;
 
-            background(100, 10);  // Fondo gris oscuro con transparencia
+            background(0, 25); // Fondo ligeramente más opaco
 
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
@@ -83,15 +81,10 @@
                 particles[i].update();
                 particles[i].edges();
                 particles[i].show();
-
-                if (erasePoint && dist(erasePoint.x, erasePoint.y, particles[i].pos.x, particles[i].pos.y) < 50) {
-                    particles[i].pos = createVector(random(width), random(height)); 
-                }
             }
 
             zoff += 0.003;
 
-            // Ajustar la amplitud del ruido verde con LFO más notable
             let noiseAmplitude = map(lfo.getAmp(), -1, 1, 0.3, 0.7);  
             noiseOscillator.amp(noiseAmplitude, 0.6);  
         }
@@ -106,14 +99,12 @@
 
         function touchMoved() {
             erasePoint = createVector(mouseX, mouseY);
-            // Activar ruido verde modulado cuando se toque la pantalla
-            noiseOscillator.amp(0.5, 0.3);
+            noiseOscillator.amp(0.5, 0.3); // Activar ruido verde con el touch
         }
 
         function touchEnded() {
             erasePoint = null;
-            // Desactivar ruido verde cuando se termine el toque
-            noiseOscillator.amp(0, 0.3);
+            noiseOscillator.amp(0, 0.3); // Desactivar ruido verde cuando se deje de tocar
         }
 
         class Particle {
@@ -169,12 +160,10 @@
             }
 
             show() {
-                // Luz blanca-amarilla en los puntos
-                stroke(255, 255, 100);  
-                strokeWeight(1.5);
-
-                line(this.pos.x, this.pos.y, this.prevPos.x, this.prevPos.y);
-                this.prevPos = this.pos.copy();
+                // Simplificar las partículas a puntos
+                stroke(255, 255, 150); // Color blanco-amarillo
+                strokeWeight(2);
+                point(this.pos.x, this.pos.y); // Usar puntos en lugar de líneas para simplificar gráficamente
             }
 
             edges() {
@@ -186,7 +175,12 @@
             }
         }
 
+        function windowResized() {
+            resizeCanvas(windowWidth, windowHeight);  
+        }
+
         noLoop();  
     </script>
 </body>
 </html>
+
