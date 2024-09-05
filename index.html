@@ -115,7 +115,7 @@
                 this.maxSpeed = maxSpeed;
                 this.prevPos = this.pos.copy();
 
-                this.baseFreq = random(100, 7000);  
+                this.baseFreq = random(500, 3000);  
                 this.oscillator = new p5.Oscillator('sine');
                 this.oscillator.freq(this.baseFreq);
                 this.oscillator.amp(0);
@@ -125,7 +125,7 @@
 
                 this.shouldPlaySound = random(1) < 0.10;  
                 this.soundDuration = random(5000, 10000);  
-                this.nextSoundTime = millis() + random(3000, 10000);  
+                this.nextSoundTime = millis() + random(300, 1000);  
             }
 
             follow(vectors) {
@@ -152,8 +152,8 @@
                     this.oscillator.amp(random(0.01, 0.02), 0.2);  
                     setTimeout(() => {
                         this.oscillator.amp(0.01, 0.2);  
-                        setTimeout(() => this.oscillator.stop(), 1000);  
-                    }, this.soundDuration - 1000);
+                        setTimeout(() => this.oscillator.stop(), 1400);  
+                    }, this.soundDuration - 400);
 
                     this.nextSoundTime = currentTime + random(3000, 10000);  
                 }
