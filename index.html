@@ -22,7 +22,7 @@
         let zoff = 0;
         let particles = [];
         let flowfield;
-        let maxSpeed = 0.3;
+        let maxSpeed = 0.4;
         let audioStarted = false;
         let globalReverb, noiseOscillator, lfo;
         let erasePoint;
@@ -39,7 +39,7 @@
             // Configurar ruido verde
             noiseOscillator = new p5.Noise('pink');
             let lowPassFilter = new p5.LowPass();
-            lowPassFilter.freq(500); 
+            lowPassFilter.freq(400); 
             noiseOscillator.disconnect();
             noiseOscillator.connect(lowPassFilter);
             noiseOscillator.amp(0.5, 1);
@@ -60,7 +60,7 @@
         function draw() {
             if (!audioStarted) return;
 
-            background(0, 25); // Fondo ligeramente más opaco
+            background(100, 10); // Fondo ligeramente más opaco
 
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
