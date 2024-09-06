@@ -60,7 +60,7 @@
         function draw() {
             if (!audioStarted) return;
 
-            background(100, 10);
+            background(100, 10); // Fondo ligeramente más opaco
 
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
@@ -89,32 +89,32 @@
             noiseOscillator.amp(noiseAmplitude, 0.6);  
         }
 
-        function touchMoved() {
-            let modFreq = map(touchX, 0, width, 500, 2000); // Mapear la posición X a la frecuencia
-            let modAmp = map(touchY, 0, height, 0.01, 0.2); // Mapear la posición Y a la amplitud
-
-            // Aplicar la modulación a las partículas activas
-            for (let i = 0; i < particles.length; i++) {
-                if (particles[i].shouldPlaySound) {
-                    particles[i].oscillator.freq(modFreq);
-                    particles[i].oscillator.amp(modAmp, 0.1);
-                }
-            }
-
-            // Activar el ruido verde
-            noiseOscillator.amp(0.5, 0.3);
-        }
-
-        function touchEnded() {
-            noiseOscillator.amp(0, 0.3); // Desactivar ruido verde cuando se deje de tocar
-        }
-
         function mousePressed() {
             if (!audioStarted) {
                 userStartAudio();  
                 audioStarted = true;
                 loop();  
             }
+        }
+
+        function touchMoved() {
+            let modFreq = map(touchX, 0, width, 500, 3000); // Mapear la posición X a la frecuencia
+            let modAmp = map(touchY, 0, height, 0.01, 0.2); // Mapear la posición Y a la amplitud
+
+            // Aplicar la modulación a las partículas activas
+            for (let i = 0; i < particles.length; i++) {
+                if (particles[i].shouldPlaySound) {
+                    particles[i].oscillator.freq(modFreq); // Modificar la frecuencia
+                    particles[i].oscillator.amp(modAmp, 0.1); // Modificar la amplitud
+                }
+            }
+
+            // Activar el ruido verde con el toque
+            noiseOscillator.amp(0.5, 0.3);
+        }
+
+        function touchEnded() {
+            noiseOscillator.amp(0, 0.3); // Desactivar ruido verde cuando se deje de tocar
         }
 
         class Particle {
@@ -192,5 +192,6 @@
     </script>
 </body>
 </html>
+
 
 
