@@ -33,27 +33,44 @@
         let globalReverb;
         let erasePoint;
 
-        function setup() {
-            createCanvas(windowWidth, windowHeight);
-            colorMode(HSB, 320, 900, 100, 100);  // Cambiar el modo de color a HSB
-            cols = floor(width / scl);
-            rows = floor(height / scl);
-            flowfield = new Array(cols * rows);
+        // Ajustes para versión móvil y ruido verde
+function setup() {
+    createCanvas(windowWidth, windowHeight);
+    colorMode(HSB, 320, 900, 100, 100);  // Cambiar el modo de color a HSB
+    cols = floor(width / scl);
+    rows = floor(height / scl);
+    flowfield = new Array(cols * rows);
 
-            // Reverberación muy reducida
-            globalReverb = new p5.Reverb();
-            globalReverb.set(0.2, 0.03);  // Muy poca reverberación y decay extremadamente corto
+    // Reverberación muy reducida
+    globalReverb = new p5.Reverb();
+    globalReverb.set(0.2, 0.03);  // Muy poca reverberación y decay extremadamente corto
 
-            for (let i = 0; i < 800; i++) {
-                particles.push(new Particle());  // Asegúrate de usar push() para agregar partículas
-            }
+    // Detectar si es un dispositivo móvil
+    let isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-            background(0);
+    // Ajustar la ganancia general si es móvil
+    if (isMobile) {
+        maxSpeed = 0.5;  // Reduce la velocidad en móviles
+        globalReverb.amp(0.2);  // Reduce la amplitud del reverb
+    }
 
-            // Inicia el audio automáticamente
-            userStartAudio();
-            audioStarted = true;
-        }
+    for (let i = 0; i < 800; i++) {
+        particles.push(new Particle());  // Asegúrate de usar push() para agregar partículas
+    }
+
+    // Añadir ruido verde muy leve
+    let noiseOsc = new p5.Noise('brown');  // Ruido verde con baja frecuencia
+    noiseOsc.amp(0.01);  // Amplitud muy baja
+    noiseOsc.start();
+
+    background(0);
+
+    // Inicia el audio automáticamente
+    userStartAudio();
+    audioStarted = true;
+}
+
+
 
         function draw() {
             if (!audioStarted) return;
