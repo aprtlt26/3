@@ -87,7 +87,7 @@
                 }
             }
 
-            zoff += 0.08;
+            zoff += 0.2;
         }
 
         // Activa el movimiento y modulación con el toque o el mouse
@@ -113,7 +113,7 @@
                 this.prevPos = this.pos.copy();
 
                 this.oscillators = [];
-                this.numOscillators = 1;  // Aumentamos el número de osciladores por partícula
+                this.numOscillators = 1;  
                 for (let i = 0; i < this.numOscillators; i++) {
                     let osc = new p5.Oscillator('sine');
                     osc.freq(random(100, 1000));  // Frecuencia ajustada para granularidad
@@ -125,8 +125,8 @@
                 }
 
                 this.shouldPlaySound = random(1) < 0.10;  // Menos probabilidades para evitar saturación
-                this.soundDuration = random(0.003, 0.001);  // Duraciones muy cortas
-                this.nextSoundTime = millis() + random(500, 3000);  // Aumentamos el tiempo entre sonidos
+                this.soundDuration = random(0.1, 0.2);  // Duraciones muy cortas
+                this.nextSoundTime = millis() + random(500, 2000);  // Aumentamos el tiempo entre sonidos
             }
 
             follow(vectors) {
@@ -156,7 +156,7 @@
                 let currentTime = millis();
                 if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
                     this.playOscillators();
-                    this.nextSoundTime = currentTime + random(100, 8000);  // Espacio entre sonidos
+                    this.nextSoundTime = currentTime + random(100, 5000);  // Espacio entre sonidos
                 }
             }
 
@@ -166,14 +166,14 @@
 
                     // Modulación de frecuencia y amplitud en función de la posición
                     let frequencyMod = map(this.pos.y, 0, height, 1000, 6000);  
-                    let amplitudeMod = map(this.pos.x, 0, width, 0, 0.2);  // **Reducir la amplitud para evitar saturación**
+                    let amplitudeMod = map(this.pos.x, 0, width, 0, 0.1);  // **Reducir la amplitud para evitar saturación**
 
                     osc.freq(frequencyMod);  
-                    osc.amp(amplitudeMod, 0.1);  
+                    osc.amp(amplitudeMod, 0.001);  
 
                     setTimeout(() => {
-                        osc.amp(0, 0.05);  // Reducción rápida del volumen para evitar acumulación
-                    }, this.soundDuration * 1);  
+                        osc.amp(0, 0.005);  // Reducción rápida del volumen para evitar acumulación
+                    }, this.soundDuration * 100);  
                 }
             }
 
