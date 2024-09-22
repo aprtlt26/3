@@ -35,6 +35,7 @@
 
         let noiseOsc;
 let noiseLFO;  // Oscilador de baja frecuencia para modular la amplitud del ruido
+let isMobile;
 
 function setup() {
     createCanvas(windowWidth, windowHeight);
@@ -43,18 +44,12 @@ function setup() {
     rows = floor(height / scl);
     flowfield = new Array(cols * rows);
 
+    // Detectar si es un dispositivo móvil
+    isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
     // Reverberación muy reducida
     globalReverb = new p5.Reverb();
     globalReverb.set(0.2, 0.03);  // Muy poca reverberación y decay extremadamente corto
-
-    // Detectar si es un dispositivo móvil
-    let isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-    // Ajustar la ganancia general si es móvil
-    if (isMobile) {
-        maxSpeed = 0.5;  // Reduce la velocidad en móviles
-        globalReverb.amp(0.2);  // Reduce la amplitud del reverb
-    }
 
     for (let i = 0; i < 800; i++) {
         particles.push(new Particle());  // Asegúrate de usar push() para agregar partículas
@@ -62,13 +57,17 @@ function setup() {
 
     // Añadir ruido verde muy leve
     noiseOsc = new p5.Noise('brown');  // Ruido verde con baja frecuencia
-    noiseOsc.amp(0);  // Inicialmente la amplitud es 0
+    if (isMobile) {
+        noiseOsc.amp(0);  // Inicialmente la amplitud es 0, para móviles aún más bajo
+    } else {
+        noiseOsc.amp(0.01);  // Ajuste para no saturar en escritorio
+    }
     noiseOsc.start();
 
     // Crear un LFO para modular la amplitud del ruido verde
     noiseLFO = new p5.Oscillator('sine');  // Oscilador de onda sinusoidal
-    noiseLFO.freq(random(1/6, 1/4));  // Frecuencia entre 4 y 6 segundos
-    noiseLFO.amp(0.02);  // Amplitud baja para modular la intensidad del ruido
+    noiseLFO.freq(random(1 / 6, 1 / 4));  // Frecuencia entre 4 y 6 segundos
+    noiseLFO.amp(0.05);  // Amplitud baja para modular la intensidad del ruido
     noiseLFO.start();
 
     background(0);
@@ -77,6 +76,46 @@ function setup() {
     userStartAudio();
     audioStarted = true;
 }
+
+function draw() {
+    if (!audioStarted) return;
+
+    background(80, 60);
+
+    let yoff = 0;
+    for (let y = 0; y < rows; y++) {
+        let xoff = 0;
+        for (let x = 0; x < cols; x++) {
+            let index = x + y * cols;
+            let angle = noise(xoff, yoff, zoff) * TWO_PI;
+            let v = p5.Vector.fromAngle(angle);
+            v.setMag(0.05);
+            flowfield[index] = v;
+            xoff += inc;
+        }
+        yoff += inc;
+    }
+
+    for (let i = 0; i < particles.length; i++) {
+        particles[i].follow(flowfield);
+        particles[i].update();
+        particles[i].show();  // Elimina la llamada a "edges()" ya que no es necesaria
+
+        // Si el puntero está cerca de la partícula, moverla y silenciar/activar sonido.
+        if (erasePoint && dist(erasePoint.x, erasePoint.y, particles[i].pos.x, particles[i].pos.y) < 50) {
+            particles[i].muteOscillators();
+            particles[i].pos = createVector(random(width), random(height));  // Reubicar la partícula
+            particles[i].playOscillators();  // Encender sonido en la nueva posición
+        }
+    }
+
+    zoff += 0.06;
+
+    // Modulación del ruido verde
+    let lfoValue = noiseLFO.amp() * (isMobile ? 0.01 : 0.05);  // Controlar la amplitud en móviles y escritorio
+    noiseOsc.amp(lfoValue, 0.5);  // Modula la amplitud del ruido con un tiempo de transición suave
+}
+
 
 function draw() {
     if (!audioStarted) return;
