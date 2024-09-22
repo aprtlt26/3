@@ -68,7 +68,7 @@ function setup() {
     // Crear un LFO para modular la amplitud del ruido verde
     noiseLFO = new p5.Oscillator('sine');  // Oscilador de onda sinusoidal
     noiseLFO.freq(random(1/6, 1/4));  // Frecuencia entre 4 y 6 segundos
-    noiseLFO.amp(0.05);  // Amplitud baja para modular la intensidad del ruido
+    noiseLFO.amp(0.02);  // Amplitud baja para modular la intensidad del ruido
     noiseLFO.start();
 
     background(0);
