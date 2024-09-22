@@ -35,7 +35,7 @@
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
-            colorMode(HSB,320, 900, 100, 100);  // Cambiar el modo de color a HSB
+            colorMode(HSB, 320, 900, 100, 100);  // Cambiar el modo de color a HSB
             cols = floor(width / scl);
             rows = floor(height / scl);
             flowfield = new Array(cols * rows);
@@ -78,6 +78,13 @@
                 particles[i].follow(flowfield);
                 particles[i].update();
                 particles[i].show();  // Elimina la llamada a "edges()" ya que no es necesaria
+
+                // Si el puntero está cerca de la partícula, moverla y silenciar/activar sonido.
+                if (erasePoint && dist(erasePoint.x, erasePoint.y, particles[i].pos.x, particles[i].pos.y) < 50) {
+                    particles[i].muteOscillators();
+                    particles[i].pos = createVector(random(width), random(height));  // Reubicar la partícula
+                    particles[i].playOscillators();  // Encender sonido en la nueva posición
+                }
             }
 
             zoff += 0.06;
@@ -109,7 +116,7 @@
                 this.numOscillators = 1;  // Aumentamos el número de osciladores por partícula
                 for (let i = 0; i < this.numOscillators; i++) {
                     let osc = new p5.Oscillator('sine');
-                    osc.freq(random(100, 10000));  // Frecuencia ajustada para granularidad (más baja y con tonos suaves)
+                    osc.freq(random(100, 10000));  // Frecuencia ajustada para granularidad
                     osc.amp(0);  // Amplitud inicial baja
                     osc.disconnect();
                     osc.connect(globalReverb);
@@ -117,8 +124,8 @@
                     this.oscillators.push(osc);
                 }
 
-                this.shouldPlaySound = random(1) < 0.10;  // Menos probabilidades para crear más separación entre los sonidos
-                this.soundDuration = random(0.003, 0.001);  // Duraciones muy cortas, creando un sonido seco y rápido
+                this.shouldPlaySound = random(1) < 0.10;  // Menos probabilidades para evitar saturación
+                this.soundDuration = random(0.003, 0.001);  // Duraciones muy cortas
                 this.nextSoundTime = millis() + random(500, 3000);  // Aumentamos el tiempo entre sonidos
             }
 
@@ -135,65 +142,70 @@
             }
 
             update() {
-    this.vel.add(this.acc);
-    this.vel.limit(this.maxSpeed);
-    this.pos.add(this.vel);
-    this.acc.mult(0);
+                this.vel.add(this.acc);
+                this.vel.limit(this.maxSpeed);
+                this.pos.add(this.vel);
+                this.acc.mult(0);
 
-    // Efecto de envoltura: si la partícula sale de un lado de la pantalla, aparece por el otro lado.
-    if (this.pos.x > width) this.pos.x = 0;
-    if (this.pos.x < 0) this.pos.x = width;
-    if (this.pos.y > height) this.pos.y = 0;
-    if (this.pos.y < 0) this.pos.y = height;
+                // Efecto de envoltura
+                if (this.pos.x > width) this.pos.x = 0;
+                if (this.pos.x < 0) this.pos.x = width;
+                if (this.pos.y > height) this.pos.y = 0;
+                if (this.pos.y < 0) this.pos.y = height;
 
-    let currentTime = millis();
-    if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
-        this.playOscillators();
-        this.nextSoundTime = currentTime + random(100, 5000);  // Mantener un buen espacio entre sonidos
-    }
-}
-
+                let currentTime = millis();
+                if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
+                    this.playOscillators();
+                    this.nextSoundTime = currentTime + random(100, 5000);  // Espacio entre sonidos
+                }
+            }
 
             playOscillators() {
                 for (let i = 0; i < this.oscillators.length; i++) {
                     let osc = this.oscillators[i];
 
                     // Modulación de frecuencia y amplitud en función de la posición
-                    let frequencyMod = map(this.pos.y, 0, height, 1000, 8000);  // Ajusta este rango para granularidad más seca
-                    let amplitudeMod = map(this.pos.x, 0, width, 0, 0.5);  // Amplitud más alta para mayor ganancia
+                    let frequencyMod = map(this.pos.y, 0, height, 1000, 8000);  
+                    let amplitudeMod = map(this.pos.x, 0, width, 0, 0.2);  // Reducir la amplitud para evitar saturación
 
-                    osc.freq(frequencyMod);  // Ajusta la frecuencia
-                    osc.amp(amplitudeMod, 0.001);  // Ajusta la amplitud rápidamente para sonidos secos
+                    osc.freq(frequencyMod);  
+                    osc.amp(amplitudeMod, 0.001);  
 
                     setTimeout(() => {
-                        osc.amp(0, 0.01);  // Reducción rápida del volumen
-                    }, this.soundDuration * 10);  // Duraciones extremadamente cortas para sonidos secos
+                        osc.amp(0, 0.005);  // Reducción rápida del volumen para evitar acumulación
+                    }, this.soundDuration * 10);  
+                }
+            }
+
+            // Función para silenciar los osciladores cuando se borra la partícula
+            muteOscillators() {
+                for (let i = 0; i < this.oscillators.length; i++) {
+                    let osc = this.oscillators[i];
+                    osc.amp(0, 0.01);  // Silencia rápidamente el oscilador
                 }
             }
 
             show() {
-    // Crear un efecto de color tornasolado en tonos morados, azules y verdes con plateado
-    let hueValue = map(sin(frameCount * 0.090 + this.pos.x * 0.001), -10, 1, 980, 980, 654, 224);  // Tonos morados, azules y verdes
-    let saturationValue = map(this.pos.y, 0, height, 50, 100);  // Ajusta la saturación dinámicamente
-    let brightnessValue = map(sin(frameCount * 0.03 + this.pos.y * 0.01), -1, 1, 70, 100);  // Ajusta el brillo
-    let alphaValue = map(dist(this.pos.x, this.pos.y, width / 2, height / 2), 0, width / 2, 255, 100);  // Desvaneciente hacia el borde
+                // Efecto de color tornasolado en tonos morados, azules y verdes con plateado
+                let hueValue = map(sin(frameCount * 0.090 + this.pos.x * 0.001), -1, 1, 280, 360);  
+                let saturationValue = map(this.pos.y, 0, height, 50, 100);  
+                let brightnessValue = map(sin(frameCount * 0.03 + this.pos.y * 0.01), -1, 1, 70, 100);  
+                let alphaValue = map(dist(this.pos.x, this.pos.y, width / 2, height / 2), 0, width / 2, 255, 100);  
 
-    fill(hueValue, saturationValue, brightnessValue, alphaValue);  // Tornasolado individual para cada forma
-    stroke(192, 192, 192, alphaValue);  // Borde plateado brillante
-    strokeWeight(1);  // Grosor de línea más visible
+                fill(hueValue, saturationValue, brightnessValue, alphaValue);  
+                stroke(192, 192, 192, alphaValue);  
+                strokeWeight(1);  
 
-    // Cambiar la forma de las partículas con curvas abstractas
-    beginShape();
-    let numPoints = floor(random(3, 8));  // Cantidad aleatoria de puntos por forma (3 a 6)
-    for (let i = 0; i < numPoints; i++) {
-        let offsetX = random(-1, 15);  // Posición aleatoria en X
-        let offsetY = random(-15, 1);  // Posición aleatoria en Y
-        curveVertex(this.pos.x + offsetX, this.pos.y + offsetY );  // Agrega puntos curvos
-    }
-    endShape(CLOSE);  // Cierra la forma curva para que sea completa
-
-    this.prevPos = this.pos.copy();
-}
+                // Formas curvas abstractas
+                beginShape();
+                let numPoints = floor(random(3, 8));  
+                for (let i = 0; i < numPoints; i++) {
+                    let offsetX = random(-1, 15);  
+                    let offsetY = random(-15, 1);  
+                    curveVertex(this.pos.x + offsetX, this.pos.y + offsetY);  
+                }
+                endShape(CLOSE);  
+            }
         }
     </script>
 </body>
