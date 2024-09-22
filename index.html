@@ -116,7 +116,7 @@
                 this.numOscillators = 1;  // Aumentamos el número de osciladores por partícula
                 for (let i = 0; i < this.numOscillators; i++) {
                     let osc = new p5.Oscillator('sine');
-                    osc.freq(random(100, 10000));  // Frecuencia ajustada para granularidad
+                    osc.freq(random(100, 1000));  // Frecuencia ajustada para granularidad
                     osc.amp(0);  // Amplitud inicial baja
                     osc.disconnect();
                     osc.connect(globalReverb);
