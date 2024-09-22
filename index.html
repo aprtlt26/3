@@ -87,7 +87,7 @@
                 }
             }
 
-            zoff += 0.06;
+            zoff += 0.08;
         }
 
         // Activa el movimiento y modulación con el toque o el mouse
@@ -156,7 +156,7 @@
                 let currentTime = millis();
                 if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
                     this.playOscillators();
-                    this.nextSoundTime = currentTime + random(100, 5000);  // Espacio entre sonidos
+                    this.nextSoundTime = currentTime + random(100, 8000);  // Espacio entre sonidos
                 }
             }
 
@@ -165,15 +165,15 @@
                     let osc = this.oscillators[i];
 
                     // Modulación de frecuencia y amplitud en función de la posición
-                    let frequencyMod = map(this.pos.y, 0, height, 1000, 8000);  
-                    let amplitudeMod = map(this.pos.x, 0, width, 0, 0.1);  // **Reducir la amplitud para evitar saturación**
+                    let frequencyMod = map(this.pos.y, 0, height, 1000, 6000);  
+                    let amplitudeMod = map(this.pos.x, 0, width, 0, 0.2);  // **Reducir la amplitud para evitar saturación**
 
                     osc.freq(frequencyMod);  
-                    osc.amp(amplitudeMod, 0.001);  
+                    osc.amp(amplitudeMod, 0.1);  
 
                     setTimeout(() => {
-                        osc.amp(0, 0.005);  // Reducción rápida del volumen para evitar acumulación
-                    }, this.soundDuration * 100);  
+                        osc.amp(0, 0.05);  // Reducción rápida del volumen para evitar acumulación
+                    }, this.soundDuration * 1);  
                 }
             }
 
