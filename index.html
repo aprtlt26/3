@@ -33,94 +33,27 @@
         let globalReverb;
         let erasePoint;
 
-        let noiseOsc;
-let noiseLFO;  // Oscilador de baja frecuencia para modular la amplitud del ruido
-let isMobile;
+        function setup() {
+            createCanvas(windowWidth, windowHeight);
+            colorMode(HSB, 320, 900, 100, 100);  // Cambiar el modo de color a HSB
+            cols = floor(width / scl);
+            rows = floor(height / scl);
+            flowfield = new Array(cols * rows);
 
-function setup() {
-    createCanvas(windowWidth, windowHeight);
-    colorMode(HSB, 320, 900, 100, 100);  // Cambiar el modo de color a HSB
-    cols = floor(width / scl);
-    rows = floor(height / scl);
-    flowfield = new Array(cols * rows);
+            // Reverberación muy reducida
+            globalReverb = new p5.Reverb();
+            globalReverb.set(0.2, 0.03);  // Muy poca reverberación y decay extremadamente corto
 
-    // Detectar si es un dispositivo móvil
-    isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            for (let i = 0; i < 800; i++) {
+                particles.push(new Particle());  // Asegúrate de usar push() para agregar partículas
+            }
 
-    // Reverberación muy reducida
-    globalReverb = new p5.Reverb();
-    globalReverb.set(0.2, 0.03);  // Muy poca reverberación y decay extremadamente corto
+            background(0);
 
-    for (let i = 0; i < 800; i++) {
-        particles.push(new Particle());  // Asegúrate de usar push() para agregar partículas
-    }
-
-    if (!isMobile) {
-        // Añadir ruido verde muy leve solo para la versión de escritorio
-        noiseOsc = new p5.Noise('brown');  // Ruido verde con baja frecuencia
-        noiseOsc.amp(0);  // Inicialmente la amplitud es 0
-        noiseOsc.start();
-
-        // Crear un LFO para modular la amplitud del ruido verde
-        noiseLFO = new p5.Oscillator('sine');  // Oscilador de onda sinusoidal
-        noiseLFO.freq(random(1 / 6, 1 / 4));  // Frecuencia entre 4 y 6 segundos
-        noiseLFO.amp(0.05);  // Amplitud baja para modular la intensidad del ruido
-        noiseLFO.start();
-    }
-
-    background(0);
-
-    // Inicia el audio automáticamente
-    userStartAudio();
-    audioStarted = true;
-}
-
-function draw() {
-    if (!audioStarted) return;
-
-    background(80, 60);
-
-    let yoff = 0;
-    for (let y = 0; y < rows; y++) {
-        let xoff = 0;
-        for (let x = 0; x < cols; x++) {
-            let index = x + y * cols;
-            let angle = noise(xoff, yoff, zoff) * TWO_PI;
-            let v = p5.Vector.fromAngle(angle);
-            v.setMag(0.05);
-            flowfield[index] = v;
-            xoff += inc;
+            // Inicia el audio automáticamente
+            userStartAudio();
+            audioStarted = true;
         }
-        yoff += inc;
-    }
-
-    for (let i = 0; i < particles.length; i++) {
-        particles[i].follow(flowfield);
-        particles[i].update();
-        particles[i].show();  // Elimina la llamada a "edges()" ya que no es necesaria
-
-        // Si el puntero está cerca de la partícula, moverla y silenciar/activar sonido.
-        if (erasePoint && dist(erasePoint.x, erasePoint.y, particles[i].pos.x, particles[i].pos.y) < 50) {
-            particles[i].muteOscillators();
-            particles[i].pos = createVector(random(width), random(height));  // Reubicar la partícula
-            particles[i].playOscillators();  // Encender sonido en la nueva posición
-        }
-    }
-
-    zoff += 0.06;
-
-    if (!isMobile && noiseOsc) {
-        // Solo para la versión de escritorio, modula el ruido verde
-        let lfoValue = noiseLFO.amp() * 0.05;  // Controlar la amplitud en escritorio
-        noiseOsc.amp(lfoValue, 0.5);  // Modula la amplitud del ruido con un tiempo de transición suave
-    }
-}
-
-
-
-
-
-
 
         function draw() {
             if (!audioStarted) return;
@@ -134,7 +67,7 @@ function draw() {
                     let index = x + y * cols;
                     let angle = noise(xoff, yoff, zoff) * TWO_PI;
                     let v = p5.Vector.fromAngle(angle);
-                    v.setMag(0.05);
+                    v.setMag(0.005);
                     flowfield[index] = v;
                     xoff += inc;
                 }
@@ -233,14 +166,14 @@ function draw() {
 
                     // Modulación de frecuencia y amplitud en función de la posición
                     let frequencyMod = map(this.pos.y, 0, height, 1000, 8000);  
-                    let amplitudeMod = map(this.pos.x, 0, width, 0, 0.2);  // Reducir la amplitud para evitar saturación
+                    let amplitudeMod = map(this.pos.x, 0, width, 0, 0.1);  // **Reducir la amplitud para evitar saturación**
 
                     osc.freq(frequencyMod);  
                     osc.amp(amplitudeMod, 0.001);  
 
                     setTimeout(() => {
                         osc.amp(0, 0.005);  // Reducción rápida del volumen para evitar acumulación
-                    }, this.soundDuration * 10);  
+                    }, this.soundDuration * 100);  
                 }
             }
 
