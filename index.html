@@ -1,89 +1,10 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <meta name="description" content="Alfonso Pretelt Artista">
-    <meta name="keywords" content="alfonsopretelt, sound, art, interactive_desing">
-    <meta name="author" content="alfonsopretelt">
-    <meta name="robots" content="collage">
-    <meta name="google" content="translate">
-    <meta property="og:type" content="www.alfonsopretelt.com">
-    <meta property="og:url" content="https://www.alfonsopretelt.com">
-    <meta property="og:title" content="artist multimedia developer">
-    <meta property="og:description" content="Alfonso Pretelt">
-    <meta property="og:image" content="lemt.jpeg">
-
-    <title>ALFONSO PRETELT</title>
-
-    <!-- Incluyendo Boxicons para los íconos -->
-    <link href="https://cdn.jsdelivr.net/npm/boxicons@2.0.7/css/boxicons.min.css" rel="stylesheet">
-
+    <title>EstimulaciónCerebral.Art&Psiq®-AlfonsoPretelt</title>
     <style>
-        body {
-            margin: 0;
-            background-color: #000000;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            margin: 30px;
-            font-family: "Anta", sans-serif;
-
-        }
-
-      
-
-        header {
-            background-color: #000000;
-            padding: 20px;
-            color: #d4d4d4;
-            text-align: left;
-            margin-right: 30px;
-            font-family: 'Anta';
-
-        }
-
-        .anta-regular {
-            font-family: "Anta", sans-serif;
-            font-weight: 400;
-            font-style: normal;
-        }
-
-        /* Estilos del menú */
-        #menu {
-            display: flex;
-            background-color: #000000;
-            padding: 20px;
-            color: #d4d4d4;
-            text-shadow: 0 0 10px #efffca;
-            align-items: center;
-            margin-left: -35px;
-
-        }
-
-        #menu a {
-            margin: 0 20px;
-            text-decoration: none;
-            color: #d1d1d1;
-            font-size: 12px;
-            font-family: Arial, sans-serif;
-        }
-
-        #menu a:hover {
-            color: #efffca;
-        }
-        h4 {
-            margin: 0 20px;
-            font-size: 1.5em;
-            color: #c9d9f4;
-            text-shadow: 0 0 30px #cae1ff;
-            font-family: 'Courier New', Courier, monospace;
-        }
-
-        h4:hover {
-            color: #8ebfdc;
-        }
         body, html {
             margin: 0;
             padding: 0;
@@ -91,63 +12,13 @@
             background: black;
         }
 
-        footer {
-            width: 100%;
-            padding: 5px 5;
-            text-align: center;
-            background-color: #000000;
-            color: rgb(209, 209, 209);
-            font-size: 16px;
-            box-shadow: 0 -2px 5px rgba(255, 255, 255, 0.428);
-        }
-
-
-        #clickIcon {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 12px;
-            color: #b8b8b8;
-            opacity: 0.8;
-            pointer-events: none;
-            z-index: 10;
-        }
-
-        @media (min-width: 768px) {
-            #menu {
-                display: flex;
-                flex-direction: row;
-            }
-            #menuButton {
-                display: none;
-            }
+        /* Desactivar el comportamiento de desplazamiento en móviles */
+        body {
+            touch-action: none;
         }
     </style>
 </head>
-
 <body>
-
-    <header>
-
-        <a href="index.html" style="text-decoration: none">
-            <h4 style="font-family: Anta ;" id="back-to-top">A-PRTLT</h4></a>
-    
-        <header class="container">
-         
-        <div id="menu">
-            <a href="Works-Projects.html">Works Projects</a>
-            <a href="about.html">About</a>
-            <a href="CV.html">CV</a>
-            <a href="New-Media.html">Art Media</a>
-            <a href="teachings.html">Teachings</a>
-            <a href="Contact.html">Contact</a>
-        </div>
-    </header>
-
-    <!-- Mensaje "clic" pequeño en el centro -->
-    <div id="clickIcon">clic</div>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
     <script>
@@ -173,44 +44,51 @@
             rows = floor(height / scl);
             flowfield = new Array(cols * rows);
 
+            // Reverberación con mayor suavidad
             globalReverb = new p5.Reverb();
-            globalReverb.set(20, 10);
+            globalReverb.set(20, 10); 
 
+            // Compresor para controlar los picos
             compressor = new p5.Compressor();
-            compressor.threshold(-40);
-            compressor.ratio(4);
-            compressor.attack(0.05);
-            compressor.release(0.1);
+            compressor.threshold(-40);  // Umbral más bajo para reducir la ganancia general
+            compressor.ratio(4);  
+            compressor.attack(0.05);  
+            compressor.release(0.1); 
 
-            noiseOscillator = new p5.Noise('pink');
+            // Configurar ruido blanco con filtro pasa bajos a 500Hz
+            noiseOscillator = new p5.Noise('pink');  // Cambiando a 'pink' para un sonido más suave
             let lowPassFilter = new p5.LowPass();
-            lowPassFilter.freq(300);
+            lowPassFilter.freq(300);  // Filtro pasa bajos más agresivo (300Hz)
             noiseOscillator.disconnect();
             noiseOscillator.connect(lowPassFilter);
             lowPassFilter.connect(compressor);
             compressor.connect(globalReverb);
 
+            // Crear un envelope para modular la amplitud del ruido
             envelope = new p5.Envelope();
-            envelope.setADSR(0.5, 0.4, 0.05, 0.7);
-            envelope.setRange(0.03, 0);
+            envelope.setADSR(0.5, 0.4, 0.05, 0.7);  // Suavidad en la envolvente
+            envelope.setRange(0.03, 0);  // Amplitud mucho más baja
 
-            noiseOscillator.amp(0.05);
+            noiseOscillator.amp(0.05);  // Amplitud mucho más baja para suavizar el ruido
             noiseOscillator.start();
 
+            // Crear un oscilador que oscila entre 8 y 12 Hz
             spatialOscillator = new p5.Oscillator('sine');
-            spatialOscillator.freq(432);
-            spatialOscillator.amp(0.1);
-            spatialOscillator.pan(0);
+            spatialOscillator.freq(432);  // Frecuencia base
+            spatialOscillator.amp(0.1);   // Amplitud inicial baja
+            spatialOscillator.pan(0);     // Centrado en los canales estéreo
             spatialOscillator.disconnect();
             spatialOscillator.connect(globalReverb);
             spatialOscillator.start();
 
+            // LFO para modular la frecuencia entre 8 y 12 Hz
             frequencyLFO = new p5.Oscillator('sine');
-            frequencyLFO.freq(0.2);
-            frequencyLFO.amp(2);
+            frequencyLFO.freq(0.2);  // Oscilación lenta
+            frequencyLFO.amp(2);     // Amplitud de 2 Hz, ajustando la frecuencia entre 8 y 12 Hz
             frequencyLFO.disconnect();
             frequencyLFO.start();
 
+            // LFO para modular el ruido
             lfo = new p5.Oscillator('sine');
             lfo.freq(random(1 / 7, 1 / 5));
             lfo.disconnect();
@@ -223,8 +101,9 @@
 
             background(0);
 
+            // Hacer que el ruido pulse suavemente cada 4-5 segundos
             setInterval(() => {
-                envelope.play(noiseOscillator, 0, 0.01);
+                envelope.play(noiseOscillator, 0, 0.01);  // Ruido pulsado suavemente cada intervalo
             }, pulseInterval);
         }
 
@@ -260,10 +139,12 @@
 
             zoff += 0.003;
 
-            let noiseAmplitude = map(lfo.getAmp(), -1, 1, 0.01, 0.03);
-            noiseOscillator.amp(noiseAmplitude, 0.6);
+            // Ajustar la amplitud del ruido con LFO más notable y suavizado
+            let noiseAmplitude = map(lfo.getAmp(), -1, 1, 0.01, 0.03);  // Mucho más suave
+            noiseOscillator.amp(noiseAmplitude, 0.6);  // Aplicar la amplitud suavizada
 
-            let freqMod = map(frequencyLFO.getAmp(), -1, 1, 8, 12);
+            // Ajustar la frecuencia del oscilador entre 8 y 12 Hz con el LFO
+            let freqMod = map(frequencyLFO.getAmp(), -1, 1, 8, 12);  // Modulación entre 8 y 12 Hz
             spatialOscillator.freq(freqMod);
 
             if (erasePoint) {
@@ -281,21 +162,20 @@
             }
         }
 
-        document.addEventListener('click', function() {
-            document.getElementById('clickIcon').style.display = 'none';
-        });
-
         function touchMoved() {
             erasePoint = createVector(mouseX, mouseY);
 
-            let amplitudeMod = map(mouseY, 0, height, 0, 0.02);
-            noiseOscillator.amp(amplitudeMod, 0.1);
+            // Modificar la amplitud del ruido blanco con el touch para reducir el volumen casi al silencio
+            let amplitudeMod = map(mouseY, 0, height, 0, 0.02);  // Modulación extrema hacia el silencio
+            noiseOscillator.amp(amplitudeMod, 0.1);  // Transición suave, pero bajando la amplitud drásticamente
 
-            let panValue = map(mouseX, 0, width, -1, 1);
+            // Espacialización del oscilador basado en la posición horizontal (touchX)
+            let panValue = map(mouseX, 0, width, -1, 1);  // Mover el sonido entre el canal izquierdo (-1) y derecho (1)
             spatialOscillator.pan(panValue);
 
-            let spatialAmp = map(mouseY, 0, height, 0.00, 0.3);
-            spatialOscillator.amp(spatialAmp, 0.1);
+            // Modular la amplitud del oscilador según la posición vertical (touchY)
+            let spatialAmp = map(mouseY, 0, height, 0.00, 0.3);  // Amplitud más baja a más alta
+            spatialOscillator.amp(spatialAmp, 0.1);  // Transición suave para la amplitud
         }
 
         function touchEnded() {
@@ -313,7 +193,7 @@
                 this.baseFreq = random(100, 7000);
                 this.oscillator = new p5.Oscillator('sine');
                 this.oscillator.freq(this.baseFreq);
-                this.oscillator.amp(0);
+                this.oscillator.amp(0);  // Amplitud inicial
 
                 this.oscillator.disconnect();
                 this.oscillator.connect(globalReverb);
@@ -335,42 +215,50 @@
                 this.acc.add(force);
             }
 
-            update() {
-                this.vel.add(this.acc);
-                this.vel.limit(this.maxSpeed);
-                this.pos.add(this.vel);
-                this.acc.mult(0);
+           update() {
+    this.vel.add(this.acc);
+    this.vel.limit(this.maxSpeed);
+    this.pos.add(this.vel);
+    this.acc.mult(0);
 
-                let currentTime = millis();
-                if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
-                    this.oscillator.start();
+    let currentTime = millis();
+    if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
+        this.oscillator.start();
 
-                    let frequencyMod = map(mouseY, 0, height, 300, 2000);
-                    this.oscillator.freq(frequencyMod);
+        // Modulación de la frecuencia con el touch
+        let frequencyMod = map(mouseY, 0, height, 300, 2000);  // Ajusta este rango según lo que necesites
+        this.oscillator.freq(frequencyMod);  // Modula la frecuencia
 
-                    let amplitudeMod = map(mouseY, height, 0, 0, 0.02);
-                    this.oscillator.amp(amplitudeMod, 0.2);
+        let amplitudeMod = map(mouseY, height, 0, 0, 0.02);  // Modulación de la amplitud
+        this.oscillator.amp(amplitudeMod, 0.2);  // Aplicar la modulación de amplitud
 
-                    setTimeout(() => {
-                        this.oscillator.amp(0.01, 0.2);
-                        setTimeout(() => this.oscillator.stop(), 1000);
-                    }, this.soundDuration - 1000);
+        setTimeout(() => {
+            this.oscillator.amp(0.01, 0.2);  // Reducir suavemente el volumen
+            setTimeout(() => this.oscillator.stop(), 1000);  
+        }, this.soundDuration - 1000);
 
-                    this.nextSoundTime = currentTime + random(3000, 10000);
-                }
-            }
+        this.nextSoundTime = currentTime + random(3000, 10000);
+    }
+}
+
 
             show() {
-                stroke(255, 50);
-                strokeWeight(1);
+                // Cambio de colores y formas de las partículas
+                stroke(random(50, 255), random(50, 255), random(50, 255), 50); // Colores aleatorios
+                strokeWeight(2);  // Grosor de línea más visible
 
-                line(this.pos.x, this.pos.y, this.prevPos.x, this.prevPos.y);
-                this.prevPos = this.pos.copy();
-
+                // Cambiar la forma de las partículas
                 noFill();
-                stroke(255, 20);
-                strokeWeight(3);
-                ellipse(this.pos.x, this.pos.y, 10);
+                let shapeType = floor(random(3));  // Elegir entre 3 formas aleatoriamente
+                if (shapeType === 0) {
+                    ellipse(this.pos.x, this.pos.y, 15);  // Círculo
+                } else if (shapeType === 1) {
+                    rect(this.pos.x, this.pos.y, 15, 15);  // Cuadrado
+                } else {
+                    triangle(this.pos.x, this.pos.y, this.pos.x + 10, this.pos.y + 15, this.pos.x - 10, this.pos.y + 15);  // Triángulo
+                }
+
+                this.prevPos = this.pos.copy();
             }
 
             edges() {
