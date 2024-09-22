@@ -28,34 +28,37 @@
         let zoff = 0;
         let particles = [];
         let flowfield;
-        let maxSpeed = 0.6;
+        let maxSpeed = 0.9;
         let audioStarted = false;
         let globalReverb;
         let erasePoint;
-        let pulseInterval = 5;  // Intervalo de pulsación en milisegundos (5 segundos)
-        let touchDuration = 9;  // Valor inicial de soundDuration ajustable por touch
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
+            colorMode(HSB,320, 900, 100, 100);  // Cambiar el modo de color a HSB
             cols = floor(width / scl);
             rows = floor(height / scl);
             flowfield = new Array(cols * rows);
 
-            // Reverberación reducida
+            // Reverberación muy reducida
             globalReverb = new p5.Reverb();
-            globalReverb.set(2, 1);  // Menos reverberación, decay más corto y duración reducida
+            globalReverb.set(0.2, 0.03);  // Muy poca reverberación y decay extremadamente corto
 
-            for (let i = 0; i < 500; i++) {
-                particles[i] = new Particle();
+            for (let i = 0; i < 800; i++) {
+                particles.push(new Particle());  // Asegúrate de usar push() para agregar partículas
             }
 
-            background(255);
+            background(0);
+
+            // Inicia el audio automáticamente
+            userStartAudio();
+            audioStarted = true;
         }
 
         function draw() {
             if (!audioStarted) return;
 
-            background(255, 50);
+            background(80, 60);
 
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
@@ -74,30 +77,20 @@
             for (let i = 0; i < particles.length; i++) {
                 particles[i].follow(flowfield);
                 particles[i].update();
-                particles[i].edges();
-                particles[i].show();
-
-                if (erasePoint && dist(erasePoint.x, erasePoint.y, particles[i].pos.x, particles[i].pos.y) < 50) {
-                    particles[i].pos = createVector(random(width), random(height));
-                }
+                particles[i].show();  // Elimina la llamada a "edges()" ya que no es necesaria
             }
 
             zoff += 0.06;
         }
 
-        function mousePressed() {
-            if (!audioStarted) {
-                userStartAudio();
-                audioStarted = true;
-                loop();
-            }
-        }
-
+        // Activa el movimiento y modulación con el toque o el mouse
         function touchMoved() {
             erasePoint = createVector(mouseX, mouseY);
+            return false;  // Previene el comportamiento por defecto del touch
+        }
 
-            // Ajustar soundDuration con la posición del toque en el eje X
-            touchDuration = map(mouseX, 0, width, 9, 99);
+        function mouseMoved() {
+            erasePoint = createVector(mouseX, mouseY);
         }
 
         function touchEnded() {
@@ -116,7 +109,7 @@
                 this.numOscillators = 1;  // Aumentamos el número de osciladores por partícula
                 for (let i = 0; i < this.numOscillators; i++) {
                     let osc = new p5.Oscillator('sine');
-                    osc.freq(random(500, 3000));  // Frecuencia más aguda para granularidad
+                    osc.freq(random(100, 10000));  // Frecuencia ajustada para granularidad (más baja y con tonos suaves)
                     osc.amp(0);  // Amplitud inicial baja
                     osc.disconnect();
                     osc.connect(globalReverb);
@@ -124,9 +117,9 @@
                     this.oscillators.push(osc);
                 }
 
-                this.shouldPlaySound = random(1) < 0.3;  // Más probabilidades de que se escuchen más sonidos por partícula
-                this.soundDuration = random(1, touchDuration);  // soundDuration ahora depende de touchDuration
-                this.nextSoundTime = millis() + random(3000, 5000);
+                this.shouldPlaySound = random(1) < 0.10;  // Menos probabilidades para crear más separación entre los sonidos
+                this.soundDuration = random(0.003, 0.001);  // Duraciones muy cortas, creando un sonido seco y rápido
+                this.nextSoundTime = millis() + random(500, 3000);  // Aumentamos el tiempo entre sonidos
             }
 
             follow(vectors) {
@@ -142,65 +135,66 @@
             }
 
             update() {
-                this.vel.add(this.acc);
-                this.vel.limit(this.maxSpeed);
-                this.pos.add(this.vel);
-                this.acc.mult(0);
+    this.vel.add(this.acc);
+    this.vel.limit(this.maxSpeed);
+    this.pos.add(this.vel);
+    this.acc.mult(0);
 
-                let currentTime = millis();
-                if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
-                    this.playOscillators();
+    // Efecto de envoltura: si la partícula sale de un lado de la pantalla, aparece por el otro lado.
+    if (this.pos.x > width) this.pos.x = 0;
+    if (this.pos.x < 0) this.pos.x = width;
+    if (this.pos.y > height) this.pos.y = 0;
+    if (this.pos.y < 0) this.pos.y = height;
 
-                    this.nextSoundTime = currentTime + random(3000, 5000);
-                }
-            }
+    let currentTime = millis();
+    if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
+        this.playOscillators();
+        this.nextSoundTime = currentTime + random(100, 5000);  // Mantener un buen espacio entre sonidos
+    }
+}
+
 
             playOscillators() {
                 for (let i = 0; i < this.oscillators.length; i++) {
                     let osc = this.oscillators[i];
 
                     // Modulación de frecuencia y amplitud en función de la posición
-                    let frequencyMod = map(this.pos.y, 0, height, 1000, 3000);  // Ajusta este rango para granularidad
-                    let amplitudeMod = map(this.pos.x, 0, width, 0, 0.08);  // Modulación de la amplitud
+                    let frequencyMod = map(this.pos.y, 0, height, 1000, 8000);  // Ajusta este rango para granularidad más seca
+                    let amplitudeMod = map(this.pos.x, 0, width, 0, 0.5);  // Amplitud más alta para mayor ganancia
 
                     osc.freq(frequencyMod);  // Ajusta la frecuencia
-                    osc.amp(amplitudeMod, 0.05);  // Ajusta la amplitud
+                    osc.amp(amplitudeMod, 0.001);  // Ajusta la amplitud rápidamente para sonidos secos
 
                     setTimeout(() => {
-                        osc.amp(0, 0.01);  // Suavemente reduce el volumen
-                    }, this.soundDuration * 10 - 0);
+                        osc.amp(0, 0.01);  // Reducción rápida del volumen
+                    }, this.soundDuration * 10);  // Duraciones extremadamente cortas para sonidos secos
                 }
             }
 
             show() {
-                // Cambio de colores y formas de las partículas
-                stroke(random(0, 255), random(0, 255), random(0, 255), 40); // Colores aleatorios
-                strokeWeight(1.5);  // Grosor de línea más visible
+    // Crear un efecto de color tornasolado en tonos morados, azules y verdes con plateado
+    let hueValue = map(sin(frameCount * 0.090 + this.pos.x * 0.001), -10, 1, 980, 980, 654, 224);  // Tonos morados, azules y verdes
+    let saturationValue = map(this.pos.y, 0, height, 50, 100);  // Ajusta la saturación dinámicamente
+    let brightnessValue = map(sin(frameCount * 0.03 + this.pos.y * 0.01), -1, 1, 70, 100);  // Ajusta el brillo
+    let alphaValue = map(dist(this.pos.x, this.pos.y, width / 2, height / 2), 0, width / 2, 255, 100);  // Desvaneciente hacia el borde
 
-                // Cambiar la forma de las partículas
-                noFill();
-                let shapeType = floor(random(4));  // Elegir entre 3 formas aleatoriamente
-                if (shapeType === 0) {
-                    ellipse(this.pos.x, this.pos.y, 15);  // Círculo
-                } else if (shapeType === 1) {
-                    rect(this.pos.x, this.pos.y, 15, 15);  // Cuadrado
-                } else {
-                    triangle(this.pos.x, this.pos.y, this.pos.x + 10, this.pos.y + 15, this.pos.x - 10, this.pos.y + 15);  // Triángulo
-                }
+    fill(hueValue, saturationValue, brightnessValue, alphaValue);  // Tornasolado individual para cada forma
+    stroke(192, 192, 192, alphaValue);  // Borde plateado brillante
+    strokeWeight(1);  // Grosor de línea más visible
 
-                this.prevPos = this.pos.copy();
-            }
+    // Cambiar la forma de las partículas con curvas abstractas
+    beginShape();
+    let numPoints = floor(random(3, 8));  // Cantidad aleatoria de puntos por forma (3 a 6)
+    for (let i = 0; i < numPoints; i++) {
+        let offsetX = random(-1, 15);  // Posición aleatoria en X
+        let offsetY = random(-15, 1);  // Posición aleatoria en Y
+        curveVertex(this.pos.x + offsetX, this.pos.y + offsetY );  // Agrega puntos curvos
+    }
+    endShape(CLOSE);  // Cierra la forma curva para que sea completa
 
-            edges() {
-                if (this.pos.x > width) this.pos.x = 0;
-                if (this.pos.x < 0) this.pos.x = width;
-                if (this.pos.y > height) this.pos.y = 0;
-                if (this.pos.y < 0) this.pos.y = height;
-                this.prevPos = this.pos.copy();
-            }
+    this.prevPos = this.pos.copy();
+}
         }
-
-        noLoop();
     </script>
 </body>
 </html>
