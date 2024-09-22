@@ -9,7 +9,7 @@
             margin: 0;
             padding: 0;
             overflow: hidden;
-            background: black;
+            background: rgb(255, 255, 255);
         }
 
         /* Desactivar el comportamiento de desplazamiento en móviles */
@@ -28,15 +28,12 @@
         let zoff = 0;
         let particles = [];
         let flowfield;
-        let maxSpeed = 0.3;
+        let maxSpeed = 0.6;
         let audioStarted = false;
-        let globalReverb, noiseOscillator, lfo;
+        let globalReverb;
         let erasePoint;
-        let compressor;
-        let envelope;
-        let pulseInterval = 5000;  // Intervalo de pulsación en milisegundos (5 segundos)
-        let spatialOscillator;
-        let frequencyLFO;
+        let pulseInterval = 5;  // Intervalo de pulsación en milisegundos (5 segundos)
+        let touchDuration = 9;  // Valor inicial de soundDuration ajustable por touch
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
@@ -44,73 +41,21 @@
             rows = floor(height / scl);
             flowfield = new Array(cols * rows);
 
-            // Reverberación con mayor suavidad
+            // Reverberación reducida
             globalReverb = new p5.Reverb();
-            globalReverb.set(20, 10); 
-
-            // Compresor para controlar los picos
-            compressor = new p5.Compressor();
-            compressor.threshold(-40);  // Umbral más bajo para reducir la ganancia general
-            compressor.ratio(4);  
-            compressor.attack(0.05);  
-            compressor.release(0.1); 
-
-            // Configurar ruido blanco con filtro pasa bajos a 500Hz
-            noiseOscillator = new p5.Noise('pink');  // Cambiando a 'pink' para un sonido más suave
-            let lowPassFilter = new p5.LowPass();
-            lowPassFilter.freq(300);  // Filtro pasa bajos más agresivo (300Hz)
-            noiseOscillator.disconnect();
-            noiseOscillator.connect(lowPassFilter);
-            lowPassFilter.connect(compressor);
-            compressor.connect(globalReverb);
-
-            // Crear un envelope para modular la amplitud del ruido
-            envelope = new p5.Envelope();
-            envelope.setADSR(0.5, 0.4, 0.05, 0.7);  // Suavidad en la envolvente
-            envelope.setRange(0.03, 0);  // Amplitud mucho más baja
-
-            noiseOscillator.amp(0.05);  // Amplitud mucho más baja para suavizar el ruido
-            noiseOscillator.start();
-
-            // Crear un oscilador que oscila entre 8 y 12 Hz
-            spatialOscillator = new p5.Oscillator('sine');
-            spatialOscillator.freq(432);  // Frecuencia base
-            spatialOscillator.amp(0.1);   // Amplitud inicial baja
-            spatialOscillator.pan(0);     // Centrado en los canales estéreo
-            spatialOscillator.disconnect();
-            spatialOscillator.connect(globalReverb);
-            spatialOscillator.start();
-
-            // LFO para modular la frecuencia entre 8 y 12 Hz
-            frequencyLFO = new p5.Oscillator('sine');
-            frequencyLFO.freq(0.2);  // Oscilación lenta
-            frequencyLFO.amp(2);     // Amplitud de 2 Hz, ajustando la frecuencia entre 8 y 12 Hz
-            frequencyLFO.disconnect();
-            frequencyLFO.start();
-
-            // LFO para modular el ruido
-            lfo = new p5.Oscillator('sine');
-            lfo.freq(random(1 / 7, 1 / 5));
-            lfo.disconnect();
-            lfo.amp(0.4);
-            lfo.start();
+            globalReverb.set(2, 1);  // Menos reverberación, decay más corto y duración reducida
 
             for (let i = 0; i < 500; i++) {
                 particles[i] = new Particle();
             }
 
-            background(0);
-
-            // Hacer que el ruido pulse suavemente cada 4-5 segundos
-            setInterval(() => {
-                envelope.play(noiseOscillator, 0, 0.01);  // Ruido pulsado suavemente cada intervalo
-            }, pulseInterval);
+            background(255);
         }
 
         function draw() {
             if (!audioStarted) return;
 
-            background(0, 10);
+            background(255, 50);
 
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
@@ -119,7 +64,7 @@
                     let index = x + y * cols;
                     let angle = noise(xoff, yoff, zoff) * TWO_PI;
                     let v = p5.Vector.fromAngle(angle);
-                    v.setMag(0.5);
+                    v.setMag(0.05);
                     flowfield[index] = v;
                     xoff += inc;
                 }
@@ -137,21 +82,7 @@
                 }
             }
 
-            zoff += 0.003;
-
-            // Ajustar la amplitud del ruido con LFO más notable y suavizado
-            let noiseAmplitude = map(lfo.getAmp(), -1, 1, 0.01, 0.03);  // Mucho más suave
-            noiseOscillator.amp(noiseAmplitude, 0.6);  // Aplicar la amplitud suavizada
-
-            // Ajustar la frecuencia del oscilador entre 8 y 12 Hz con el LFO
-            let freqMod = map(frequencyLFO.getAmp(), -1, 1, 8, 12);  // Modulación entre 8 y 12 Hz
-            spatialOscillator.freq(freqMod);
-
-            if (erasePoint) {
-                fill(0);
-                noStroke();
-                ellipse(erasePoint.x, erasePoint.y, 50);
-            }
+            zoff += 0.06;
         }
 
         function mousePressed() {
@@ -165,17 +96,8 @@
         function touchMoved() {
             erasePoint = createVector(mouseX, mouseY);
 
-            // Modificar la amplitud del ruido blanco con el touch para reducir el volumen casi al silencio
-            let amplitudeMod = map(mouseY, 0, height, 0, 0.02);  // Modulación extrema hacia el silencio
-            noiseOscillator.amp(amplitudeMod, 0.1);  // Transición suave, pero bajando la amplitud drásticamente
-
-            // Espacialización del oscilador basado en la posición horizontal (touchX)
-            let panValue = map(mouseX, 0, width, -1, 1);  // Mover el sonido entre el canal izquierdo (-1) y derecho (1)
-            spatialOscillator.pan(panValue);
-
-            // Modular la amplitud del oscilador según la posición vertical (touchY)
-            let spatialAmp = map(mouseY, 0, height, 0.00, 0.3);  // Amplitud más baja a más alta
-            spatialOscillator.amp(spatialAmp, 0.1);  // Transición suave para la amplitud
+            // Ajustar soundDuration con la posición del toque en el eje X
+            touchDuration = map(mouseX, 0, width, 9, 99);
         }
 
         function touchEnded() {
@@ -190,17 +112,21 @@
                 this.maxSpeed = maxSpeed;
                 this.prevPos = this.pos.copy();
 
-                this.baseFreq = random(100, 7000);
-                this.oscillator = new p5.Oscillator('sine');
-                this.oscillator.freq(this.baseFreq);
-                this.oscillator.amp(0);  // Amplitud inicial
+                this.oscillators = [];
+                this.numOscillators = 1;  // Aumentamos el número de osciladores por partícula
+                for (let i = 0; i < this.numOscillators; i++) {
+                    let osc = new p5.Oscillator('sine');
+                    osc.freq(random(500, 3000));  // Frecuencia más aguda para granularidad
+                    osc.amp(0);  // Amplitud inicial baja
+                    osc.disconnect();
+                    osc.connect(globalReverb);
+                    osc.start();
+                    this.oscillators.push(osc);
+                }
 
-                this.oscillator.disconnect();
-                this.oscillator.connect(globalReverb);
-
-                this.shouldPlaySound = random(1) < 0.10;
-                this.soundDuration = random(5000, 10000);
-                this.nextSoundTime = millis() + random(3000, 10000);
+                this.shouldPlaySound = random(1) < 0.3;  // Más probabilidades de que se escuchen más sonidos por partícula
+                this.soundDuration = random(1, touchDuration);  // soundDuration ahora depende de touchDuration
+                this.nextSoundTime = millis() + random(3000, 5000);
             }
 
             follow(vectors) {
@@ -215,41 +141,45 @@
                 this.acc.add(force);
             }
 
-           update() {
-    this.vel.add(this.acc);
-    this.vel.limit(this.maxSpeed);
-    this.pos.add(this.vel);
-    this.acc.mult(0);
+            update() {
+                this.vel.add(this.acc);
+                this.vel.limit(this.maxSpeed);
+                this.pos.add(this.vel);
+                this.acc.mult(0);
 
-    let currentTime = millis();
-    if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
-        this.oscillator.start();
+                let currentTime = millis();
+                if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
+                    this.playOscillators();
 
-        // Modulación de la frecuencia con el touch
-        let frequencyMod = map(mouseY, 0, height, 300, 2000);  // Ajusta este rango según lo que necesites
-        this.oscillator.freq(frequencyMod);  // Modula la frecuencia
+                    this.nextSoundTime = currentTime + random(3000, 5000);
+                }
+            }
 
-        let amplitudeMod = map(mouseY, height, 0, 0, 0.02);  // Modulación de la amplitud
-        this.oscillator.amp(amplitudeMod, 0.2);  // Aplicar la modulación de amplitud
+            playOscillators() {
+                for (let i = 0; i < this.oscillators.length; i++) {
+                    let osc = this.oscillators[i];
 
-        setTimeout(() => {
-            this.oscillator.amp(0.01, 0.2);  // Reducir suavemente el volumen
-            setTimeout(() => this.oscillator.stop(), 1000);  
-        }, this.soundDuration - 1000);
+                    // Modulación de frecuencia y amplitud en función de la posición
+                    let frequencyMod = map(this.pos.y, 0, height, 1000, 3000);  // Ajusta este rango para granularidad
+                    let amplitudeMod = map(this.pos.x, 0, width, 0, 0.08);  // Modulación de la amplitud
 
-        this.nextSoundTime = currentTime + random(3000, 10000);
-    }
-}
+                    osc.freq(frequencyMod);  // Ajusta la frecuencia
+                    osc.amp(amplitudeMod, 0.05);  // Ajusta la amplitud
 
+                    setTimeout(() => {
+                        osc.amp(0, 0.01);  // Suavemente reduce el volumen
+                    }, this.soundDuration * 10 - 0);
+                }
+            }
 
             show() {
                 // Cambio de colores y formas de las partículas
-                stroke(random(50, 255), random(50, 255), random(50, 255), 50); // Colores aleatorios
-                strokeWeight(2);  // Grosor de línea más visible
+                stroke(random(0, 255), random(0, 255), random(0, 255), 40); // Colores aleatorios
+                strokeWeight(1.5);  // Grosor de línea más visible
 
                 // Cambiar la forma de las partículas
                 noFill();
-                let shapeType = floor(random(3));  // Elegir entre 3 formas aleatoriamente
+                let shapeType = floor(random(4));  // Elegir entre 3 formas aleatoriamente
                 if (shapeType === 0) {
                     ellipse(this.pos.x, this.pos.y, 15);  // Círculo
                 } else if (shapeType === 1) {
@@ -274,7 +204,6 @@
     </script>
 </body>
 </html>
-
 
 
 
