@@ -9,7 +9,8 @@
             margin: 0;
             padding: 0;
             overflow: hidden;
-            background: rgb(255, 255, 255);
+            background: rgb(210, 209, 209);
+
         }
 
         /* Desactivar el comportamiento de desplazamiento en móviles */
@@ -48,11 +49,14 @@
                 particles.push(new Particle());  // Asegúrate de usar push() para agregar partículas
             }
 
-            background(0);
+            background(80);
+            noLoop();  // Detenemos el ciclo de dibujo hasta que se haga clic
 
-            // Inicia el audio automáticamente
-            userStartAudio();
-            audioStarted = true;
+            // Mensaje inicial para el usuario
+            textSize(32);
+            fill(255);
+            textAlign(CENTER, CENTER);
+            text("clic", width / 1, height / 1)     ;
         }
 
         function draw() {
@@ -77,7 +81,7 @@
             for (let i = 0; i < particles.length; i++) {
                 particles[i].follow(flowfield);
                 particles[i].update();
-                particles[i].show();  // Elimina la llamada a "edges()" ya que no es necesaria
+                particles[i].show();
 
                 // Si el puntero está cerca de la partícula, moverla y silenciar/activar sonido.
                 if (erasePoint && dist(erasePoint.x, erasePoint.y, particles[i].pos.x, particles[i].pos.y) < 50) {
@@ -102,6 +106,15 @@
 
         function touchEnded() {
             erasePoint = null;
+        }
+
+        // Función que se ejecuta al hacer clic para iniciar el audio y el dibujo
+        function mousePressed() {
+            if (!audioStarted) {
+                userStartAudio();  // Activa el audio
+                audioStarted = true;
+                loop();  // Inicia el ciclo de dibujo
+            }
         }
 
         class Particle {
