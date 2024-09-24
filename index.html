@@ -29,7 +29,7 @@
         let zoff = 0;
         let particles = [];
         let flowfield;
-        let maxSpeed = 0.9;
+        let maxSpeed = 0.8;
         let audioStarted = false;
         let globalReverb;
         let erasePoint;
@@ -43,9 +43,9 @@
 
             // Reverberación muy reducida
             globalReverb = new p5.Reverb();
-            globalReverb.set(0.2, 0.03);  // Muy poca reverberación y decay extremadamente corto
+            globalReverb.set(0.2, 0.3);  // Muy poca reverberación y decay extremadamente corto
 
-            for (let i = 0; i < 800; i++) {
+            for (let i = 0; i < 500; i++) {
                 particles.push(new Particle());  // Asegúrate de usar push() para agregar partículas
             }
 
@@ -62,7 +62,7 @@
         function draw() {
             if (!audioStarted) return;
 
-            background(80, 60);
+            background(80, 80);
 
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
@@ -137,9 +137,9 @@
                     this.oscillators.push(osc);
                 }
 
-                this.shouldPlaySound = random(1) < 0.10;  // Menos probabilidades para evitar saturación
-                this.soundDuration = random(0.1, 0.2);  // Duraciones muy cortas
-                this.nextSoundTime = millis() + random(500, 2000);  // Aumentamos el tiempo entre sonidos
+                this.shouldPlaySound = random(1) < 0.09;  // Menos probabilidades para evitar saturación
+                this.soundDuration = random(0.01, 0.07);  // Duraciones muy cortas
+                this.nextSoundTime = millis() + random(100, 500);  // Aumentamos el tiempo entre sonidos
             }
 
             follow(vectors) {
@@ -179,14 +179,14 @@
 
                     // Modulación de frecuencia y amplitud en función de la posición
                     let frequencyMod = map(this.pos.y, 0, height, 1000, 6000);  
-                    let amplitudeMod = map(this.pos.x, 0, width, 0, 0.1);  // **Reducir la amplitud para evitar saturación**
+                    let amplitudeMod = map(this.pos.x, 0, width, 0, 0.3);  // **Reducir la amplitud para evitar saturación**
 
                     osc.freq(frequencyMod);  
-                    osc.amp(amplitudeMod, 0.001);  
+                    osc.amp(amplitudeMod, 0.01);  
 
                     setTimeout(() => {
-                        osc.amp(0, 0.005);  // Reducción rápida del volumen para evitar acumulación
-                    }, this.soundDuration * 100);  
+                        osc.amp(0, 0.02);  // Reducción rápida del volumen para evitar acumulación
+                    }, this.soundDuration * 50);  
                 }
             }
 
@@ -194,7 +194,7 @@
             muteOscillators() {
                 for (let i = 0; i < this.oscillators.length; i++) {
                     let osc = this.oscillators[i];
-                    osc.amp(0, 0.01);  // Silencia rápidamente el oscilador
+                    osc.amp(0, 0.1);  // Silencia rápidamente el oscilador
                 }
             }
 
@@ -223,5 +223,6 @@
     </script>
 </body>
 </html>
+
 
 
