@@ -10,7 +10,6 @@
             padding: 0;
             overflow: hidden;
             background: rgb(210, 209, 209);
-
         }
 
         /* Desactivar el comportamiento de desplazamiento en móviles */
@@ -31,7 +30,7 @@
         let flowfield;
         let maxSpeed = 0.8;
         let audioStarted = false;
-        let globalReverb;
+        let combFilter;  // Filtro comb que reemplaza la reverb
         let erasePoint;
 
         function setup() {
@@ -41,12 +40,15 @@
             rows = floor(height / scl);
             flowfield = new Array(cols * rows);
 
-            // Reverberación muy reducida
-            globalReverb = new p5.Reverb();
-            globalReverb.set(0.2, 0.3);  // Muy poca reverberación y decay extremadamente corto
+            // Filtro comb
+            combFilter = new p5.Delay();
+            combFilter.setType('comb');
+            combFilter.delayTime(0.1);  // Tiempo de retardo del filtro comb
+            combFilter.feedback(0.4);   // Retroalimentación moderada
+            combFilter.amp(0.3);        // Amplitud del filtro comb
 
             for (let i = 0; i < 500; i++) {
-                particles.push(new Particle());  // Asegúrate de usar push() para agregar partículas
+                particles.push(new Particle());
             }
 
             background(80);
@@ -56,7 +58,7 @@
             textSize(32);
             fill(255);
             textAlign(CENTER, CENTER);
-            text("clic", width / 1, height / 1)     ;
+            text("clic para iniciar", width / 2, height / 2);
         }
 
         function draw() {
@@ -86,18 +88,17 @@
                 // Si el puntero está cerca de la partícula, moverla y silenciar/activar sonido.
                 if (erasePoint && dist(erasePoint.x, erasePoint.y, particles[i].pos.x, particles[i].pos.y) < 50) {
                     particles[i].muteOscillators();
-                    particles[i].pos = createVector(random(width), random(height));  // Reubicar la partícula
-                    particles[i].playOscillators();  // Encender sonido en la nueva posición
+                    particles[i].pos = createVector(random(width), random(height));
+                    particles[i].playOscillators();
                 }
             }
 
             zoff += 0.2;
         }
 
-        // Activa el movimiento y modulación con el toque o el mouse
         function touchMoved() {
             erasePoint = createVector(mouseX, mouseY);
-            return false;  // Previene el comportamiento por defecto del touch
+            return false;
         }
 
         function mouseMoved() {
@@ -108,7 +109,6 @@
             erasePoint = null;
         }
 
-        // Función que se ejecuta al hacer clic para iniciar el audio y el dibujo
         function mousePressed() {
             if (!audioStarted) {
                 userStartAudio();  // Activa el audio
@@ -126,13 +126,13 @@
                 this.prevPos = this.pos.copy();
 
                 this.oscillators = [];
-                this.numOscillators = 1;  
+                this.numOscillators = 1;
                 for (let i = 0; i < this.numOscillators; i++) {
                     let osc = new p5.Oscillator('sine');
                     osc.freq(random(100, 1000));  // Frecuencia ajustada para granularidad
                     osc.amp(0);  // Amplitud inicial baja
                     osc.disconnect();
-                    osc.connect(globalReverb);
+                    osc.connect(combFilter);  // Conectamos al filtro comb
                     osc.start();
                     this.oscillators.push(osc);
                 }
@@ -169,7 +169,7 @@
                 let currentTime = millis();
                 if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
                     this.playOscillators();
-                    this.nextSoundTime = currentTime + random(100, 5000);  // Espacio entre sonidos
+                    this.nextSoundTime = currentTime + random(100, 5000);
                 }
             }
 
@@ -178,19 +178,18 @@
                     let osc = this.oscillators[i];
 
                     // Modulación de frecuencia y amplitud en función de la posición
-                    let frequencyMod = map(this.pos.y, 0, height, 1000, 6000);  
-                    let amplitudeMod = map(this.pos.x, 0, width, 0, 0.3);  // **Reducir la amplitud para evitar saturación**
+                    let frequencyMod = map(this.pos.y, 0, height, 1000, 6000);
+                    let amplitudeMod = map(this.pos.x, 0, width, 0, 0.3);  // Reducir la amplitud para evitar saturación
 
-                    osc.freq(frequencyMod);  
-                    osc.amp(amplitudeMod, 0.01);  
+                    osc.freq(frequencyMod);
+                    osc.amp(amplitudeMod, 0.01);
 
                     setTimeout(() => {
                         osc.amp(0, 0.02);  // Reducción rápida del volumen para evitar acumulación
-                    }, this.soundDuration * 50);  
+                    }, this.soundDuration * 50);
                 }
             }
 
-            // Función para silenciar los osciladores cuando se borra la partícula
             muteOscillators() {
                 for (let i = 0; i < this.oscillators.length; i++) {
                     let osc = this.oscillators[i];
@@ -200,29 +199,28 @@
 
             show() {
                 // Efecto de color tornasolado en tonos morados, azules y verdes con plateado
-                let hueValue = map(sin(frameCount * 0.090 + this.pos.x * 0.001), -1, 1, 280, 360);  
-                let saturationValue = map(this.pos.y, 0, height, 50, 100);  
-                let brightnessValue = map(sin(frameCount * 0.03 + this.pos.y * 0.01), -1, 1, 70, 100);  
-                let alphaValue = map(dist(this.pos.x, this.pos.y, width / 2, height / 2), 0, width / 2, 255, 100);  
+                let hueValue = map(sin(frameCount * 0.090 + this.pos.x * 0.001), -1, 1, 280, 360);
+                let saturationValue = map(this.pos.y, 0, height, 50, 100);
+                let brightnessValue = map(sin(frameCount * 0.03 + this.pos.y * 0.01), -1, 1, 70, 100);
+                let alphaValue = map(dist(this.pos.x, this.pos.y, width / 2, height / 2), 0, width / 2, 255, 100);
 
-                fill(hueValue, saturationValue, brightnessValue, alphaValue);  
-                stroke(192, 192, 192, alphaValue);  
-                strokeWeight(1);  
+                fill(hueValue, saturationValue, brightnessValue, alphaValue);
+                stroke(192, 192, 192, alphaValue);
+                strokeWeight(1);
 
                 // Formas curvas abstractas
                 beginShape();
-                let numPoints = floor(random(3, 8));  
+                let numPoints = floor(random(3, 8));
                 for (let i = 0; i < numPoints; i++) {
-                    let offsetX = random(-1, 15);  
-                    let offsetY = random(-15, 1);  
-                    curveVertex(this.pos.x + offsetX, this.pos.y + offsetY);  
+                    let offsetX = random(-1, 15);
+                    let offsetY = random(-15, 1);
+                    curveVertex(this.pos.x + offsetX, this.pos.y + offsetY);
                 }
-                endShape(CLOSE);  
+                endShape(CLOSE);
             }
         }
     </script>
 </body>
 </html>
-
 
 
