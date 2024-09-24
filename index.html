@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EstimulaciónCerebral.Art&Psiq®-AlfonsoPretelt</title>
+    <title>Art&Psiq®-APrtlt</title>
     <style>
         body, html {
             margin: 0;
@@ -15,7 +15,6 @@
 
         }
 
-        /* Desactivar el comportamiento de desplazamiento en móviles */
         body {
             touch-action: none;
         }
@@ -38,23 +37,21 @@
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
-            colorMode(HSB, 320, 900, 100, 100);  // Cambiar el modo de color a HSB
+            colorMode(HSB, 320, 900, 100, 100);  
             cols = floor(width / scl);
             rows = floor(height / scl);
             flowfield = new Array(cols * rows);
 
-            // Reverberación muy reducida
             globalReverb = new p5.Reverb();
-            globalReverb.set(0.2, 0.3);  // Muy poca reverberación y decay extremadamente corto
+            globalReverb.set(0.2, 0.3);  
 
             for (let i = 0; i < 700; i++) {
-                particles.push(new Particle());  // Asegúrate de usar push() para agregar partículas
+                particles.push(new Particle()); 
             }
 
             background(80);
-            noLoop();  // Detenemos el ciclo de dibujo hasta que se haga clic
+            noLoop();  
 
-            // Mensaje inicial para el usuario
             textSize(32);
             fill(255);
             textAlign(CENTER, CENTER);
@@ -85,21 +82,19 @@
                 particles[i].update();
                 particles[i].show();
 
-                // Si el puntero está cerca de la partícula, moverla y silenciar/activar sonido.
                 if (erasePoint && dist(erasePoint.x, erasePoint.y, particles[i].pos.x, particles[i].pos.y) < 50) {
                     particles[i].muteOscillators();
-                    particles[i].pos = createVector(random(width), random(height));  // Reubicar la partícula
-                    particles[i].playOscillators();  // Encender sonido en la nueva posición
+                    particles[i].pos = createVector(random(width), random(height));  
+                    particles[i].playOscillators();  
                 }
             }
 
             zoff += 0.2;
         }
 
-        // Activa el movimiento y modulación con el toque o el mouse
         function touchMoved() {
             erasePoint = createVector(mouseX, mouseY);
-            return false;  // Previene el comportamiento por defecto del touch
+            return false; 
         }
 
         function mouseMoved() {
@@ -110,12 +105,11 @@
             erasePoint = null;
         }
 
-        // Función que se ejecuta al hacer clic para iniciar el audio y el dibujo
         function mousePressed() {
             if (!audioStarted) {
-                userStartAudio();  // Activa el audio
+                userStartAudio();  
                 audioStarted = true;
-                loop();  // Inicia el ciclo de dibujo
+                loop(); 
             }
         }
 
