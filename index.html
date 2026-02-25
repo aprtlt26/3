@@ -1,225 +1,230 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Art&Psiq®-APrtlt</title>
-    <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            background: rgb(210, 209, 209);
-            cursor: none;  
-
-
-        }
-
-        body {
-            touch-action: none;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Art&Psiq®-APrtlt</title>
+<style>
+body,html{
+  margin:0;
+  padding:0;
+  overflow:hidden;
+  background:rgb(210,209,209);
+  cursor:none;
+}
+body{ touch-action:none; }
+</style>
 </head>
 <body>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
-    <script>
-        let inc = 0.05;
-        let scl = 10;
-        let cols, rows;
-        let zoff = 0;
-        let particles = [];
-        let flowfield;
-        let maxSpeed = 0.8;
-        let audioStarted = false;
-        let globalReverb;
-        let erasePoint;
 
-        function setup() {
-            createCanvas(windowWidth, windowHeight);
-            colorMode(HSB, 320, 900, 100, 100);  
-            cols = floor(width / scl);
-            rows = floor(height / scl);
-            flowfield = new Array(cols * rows);
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
 
-            globalReverb = new p5.Reverb();
-            globalReverb.set(0.2, 0.3);  
+<script>
+let inc=0.05;
+let scl=10;
+let cols,rows;
+let zoff=0;
+let particles=[];
+let flowfield;
+let maxSpeed=0.8;
+let audioStarted=false;
+let globalReverb;
+let erasePoint=null;
+let eraseRadiusSq=50*50;
 
-            for (let i = 0; i < 700; i++) {
-                particles.push(new Particle()); 
-            }
+let halfW,halfH;
 
-            background(80);
-            noLoop();  
+function setup(){
+  pixelDensity(1); // 🔥 clave móviles
+  createCanvas(windowWidth,windowHeight);
 
-            textSize(32);
-            fill(255);
-            textAlign(CENTER, CENTER);
-            text("clic", width / 1, height / 1)     ;
-        }
+  frameRate(60);
+  noiseDetail(2,0.5);
 
-        function draw() {
-            if (!audioStarted) return;
+  colorMode(HSB,320,900,100,100);
 
-            background(80, 80);
+  cols=floor(width/scl);
+  rows=floor(height/scl);
+  flowfield=new Array(cols*rows);
 
-            let yoff = 0;
-            for (let y = 0; y < rows; y++) {
-                let xoff = 0;
-                for (let x = 0; x < cols; x++) {
-                    let index = x + y * cols;
-                    let angle = noise(xoff, yoff, zoff) * TWO_PI;
-                    let v = p5.Vector.fromAngle(angle);
-                    v.setMag(0.005);
-                    flowfield[index] = v;
-                    xoff += inc;
-                }
-                yoff += inc;
-            }
+  halfW=width*0.5;
+  halfH=height*0.5;
 
-            for (let i = 0; i < particles.length; i++) {
-                particles[i].follow(flowfield);
-                particles[i].update();
-                particles[i].show();
+  globalReverb=new p5.Reverb();
+  globalReverb.set(0.2,0.3);
 
-                if (erasePoint && dist(erasePoint.x, erasePoint.y, particles[i].pos.x, particles[i].pos.y) < 50) {
-                    particles[i].muteOscillators();
-                    particles[i].pos = createVector(random(width), random(height));  
-                    particles[i].playOscillators();  
-                }
-            }
+  for(let i=0;i<700;i++){
+    particles.push(new Particle());
+  }
 
-            zoff += 0.2;
-        }
+  background(80);
+  noLoop();
 
-        function touchMoved() {
-            erasePoint = createVector(mouseX, mouseY);
-            return false; 
-        }
+  textSize(32);
+  fill(255);
+  textAlign(CENTER,CENTER);
+  text("clic",width/1,height/1);
+}
 
-        function mouseMoved() {
-            erasePoint = createVector(mouseX, mouseY);
-        }
+function draw(){
+  if(!audioStarted) return;
 
-        function touchEnded() {
-            erasePoint = null;
-        }
+  background(80,80);
 
-        function mousePressed() {
-            if (!audioStarted) {
-                userStartAudio();  
-                audioStarted = true;
-                loop(); 
-            }
-        }
+  let yoff=0;
+  for(let y=0;y<rows;y++){
+    let xoff=0;
+    for(let x=0;x<cols;x++){
+      let index=x+y*cols;
+      let angle=noise(xoff,yoff,zoff)*TWO_PI;
+      let v=p5.Vector.fromAngle(angle);
+      v.setMag(0.005);
+      flowfield[index]=v;
+      xoff+=inc;
+    }
+    yoff+=inc;
+  }
 
-        class Particle {
-            constructor() {
-                this.pos = createVector(random(width), random(height));
-                this.vel = createVector(0, 0);
-                this.acc = createVector(0, 0);
-                this.maxSpeed = maxSpeed;
-                this.prevPos = this.pos.copy();
+  for(let p of particles){
+    p.follow(flowfield);
+    p.update();
+    p.show();
 
-                this.oscillators = [];
-                this.numOscillators = 1;  
-                for (let i = 0; i < this.numOscillators; i++) {
-                    let osc = new p5.Oscillator('sine');
-                    osc.freq(random(100, 1000));  // Frecuencia ajustada para granularidad
-                    osc.amp(0);  // Amplitud inicial baja
-                    osc.disconnect();
-                    osc.connect(globalReverb);
-                    osc.start();
-                    this.oscillators.push(osc);
-                }
+    if(erasePoint){
+      let dx=erasePoint.x-p.pos.x;
+      let dy=erasePoint.y-p.pos.y;
+      if(dx*dx+dy*dy<eraseRadiusSq){
+        p.muteOscillators();
+        p.pos.set(random(width),random(height));
+        p.playOscillators();
+      }
+    }
+  }
 
-                this.shouldPlaySound = random(1) < 0.09;  // Menos probabilidades para evitar saturación
-                this.soundDuration = random(0.01, 0.07);  // Duraciones muy cortas
-                this.nextSoundTime = millis() + random(100, 500);  // Aumentamos el tiempo entre sonidos
-            }
+  zoff+=0.2;
+}
 
-            follow(vectors) {
-                let x = floor(this.pos.x / scl);
-                let y = floor(this.pos.y / scl);
-                let index = x + y * cols;
-                let force = vectors[index];
-                this.applyForce(force);
-            }
+function mouseMoved(){
+  if(!erasePoint) erasePoint=createVector(mouseX,mouseY);
+  else erasePoint.set(mouseX,mouseY);
+}
+function touchMoved(){
+  if(!erasePoint) erasePoint=createVector(mouseX,mouseY);
+  else erasePoint.set(mouseX,mouseY);
+  return false;
+}
+function touchEnded(){ erasePoint=null; }
 
-            applyForce(force) {
-                this.acc.add(force);
-            }
+function mousePressed(){
+  if(!audioStarted){
+    userStartAudio();
+    audioStarted=true;
+    loop();
+  }
+}
 
-            update() {
-                this.vel.add(this.acc);
-                this.vel.limit(this.maxSpeed);
-                this.pos.add(this.vel);
-                this.acc.mult(0);
+class Particle{
+  constructor(){
+    this.pos=createVector(random(width),random(height));
+    this.vel=createVector(0,0);
+    this.acc=createVector(0,0);
+    this.maxSpeed=maxSpeed;
+    this.prevPos=this.pos.copy();
 
-                // Efecto de envoltura
-                if (this.pos.x > width) this.pos.x = 0;
-                if (this.pos.x < 0) this.pos.x = width;
-                if (this.pos.y > height) this.pos.y = 0;
-                if (this.pos.y < 0) this.pos.y = height;
+    this.oscillators=[];
+    this.numOscillators=1;
 
-                let currentTime = millis();
-                if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
-                    this.playOscillators();
-                    this.nextSoundTime = currentTime + random(100, 5000);  // Espacio entre sonidos
-                }
-            }
+    for(let i=0;i<this.numOscillators;i++){
+      let osc=new p5.Oscillator('sine');
+      osc.freq(random(100,1000));
+      osc.amp(0);
+      osc.disconnect();
+      osc.connect(globalReverb);
+      osc.start();
+      this.oscillators.push(osc);
+    }
 
-            playOscillators() {
-                for (let i = 0; i < this.oscillators.length; i++) {
-                    let osc = this.oscillators[i];
+    this.shouldPlaySound=random(1)<0.09;
+    this.soundDuration=random(0.01,0.07);
+    this.nextSoundTime=millis()+random(100,500);
+  }
 
-                    // Modulación de frecuencia y amplitud en función de la posición
-                    let frequencyMod = map(this.pos.y, 0, height, 1000, 6000);  
-                    let amplitudeMod = map(this.pos.x, 0, width, 0, 0.3);  // **Reducir la amplitud para evitar saturación**
+  follow(vectors){
+    let x=floor(this.pos.x/scl);
+    let y=floor(this.pos.y/scl);
+    let index=x+y*cols;
+    this.acc.add(vectors[index]);
+  }
 
-                    osc.freq(frequencyMod);  
-                    osc.amp(amplitudeMod, 0.01);  
+  update(){
+    this.vel.add(this.acc);
+    this.vel.limit(this.maxSpeed);
+    this.pos.add(this.vel);
+    this.acc.mult(0);
 
-                    setTimeout(() => {
-                        osc.amp(0, 0.02);  // Reducción rápida del volumen para evitar acumulación
-                    }, this.soundDuration * 50);  
-                }
-            }
+    if(this.pos.x>width) this.pos.x=0;
+    if(this.pos.x<0) this.pos.x=width;
+    if(this.pos.y>height) this.pos.y=0;
+    if(this.pos.y<0) this.pos.y=height;
 
-            // Función para silenciar los osciladores cuando se borra la partícula
-            muteOscillators() {
-                for (let i = 0; i < this.oscillators.length; i++) {
-                    let osc = this.oscillators[i];
-                    osc.amp(0, 0.1);  // Silencia rápidamente el oscilador
-                }
-            }
+    let currentTime=millis();
+    if(this.shouldPlaySound && currentTime>=this.nextSoundTime){
+      this.playOscillators();
+      this.nextSoundTime=currentTime+random(100,5000);
+    }
+  }
 
-            show() {
-                // Efecto de color tornasolado en tonos morados, azules y verdes con plateado
-                let hueValue = map(sin(frameCount * 0.090 + this.pos.x * 0.001), -1, 1, 280, 360);  
-                let saturationValue = map(this.pos.y, 0, height, 50, 100);  
-                let brightnessValue = map(sin(frameCount * 0.03 + this.pos.y * 0.01), -1, 1, 70, 100);  
-                let alphaValue = map(dist(this.pos.x, this.pos.y, width / 2, height / 2), 0, width / 2, 255, 100);  
+  playOscillators(){
+    for(let osc of this.oscillators){
+      let frequencyMod=map(this.pos.y,0,height,1000,6000);
+      let amplitudeMod=map(this.pos.x,0,width,0,0.3);
 
-                fill(hueValue, saturationValue, brightnessValue, alphaValue);  
-                stroke(192, 192, 192, alphaValue);  
-                strokeWeight(1);  
+      osc.freq(frequencyMod);
+      osc.amp(amplitudeMod,0.01);
 
-                // Formas curvas abstractas
-                beginShape();
-                let numPoints = floor(random(3, 8));  
-                for (let i = 0; i < numPoints; i++) {
-                    let offsetX = random(-1, 15);  
-                    let offsetY = random(-15, 1);  
-                    curveVertex(this.pos.x + offsetX, this.pos.y + offsetY);  
-                }
-                endShape(CLOSE);  
-            }
-        }
-    </script>
+      setTimeout(()=>{ osc.amp(0,0.02); }, this.soundDuration*50);
+    }
+  }
+
+  muteOscillators(){
+    for(let osc of this.oscillators){
+      osc.amp(0,0.1);
+    }
+  }
+
+  show(){
+    let hueValue=map(sin(frameCount*0.090+this.pos.x*0.001),-1,1,280,360);
+    let saturationValue=map(this.pos.y,0,height,50,100);
+    let brightnessValue=map(sin(frameCount*0.03+this.pos.y*0.01),-1,1,70,100);
+
+    let dx=this.pos.x-halfW;
+    let dy=this.pos.y-halfH;
+    let distCenter=sqrt(dx*dx+dy*dy);
+    let alphaValue=map(distCenter,0,halfW,255,100);
+
+    fill(hueValue,saturationValue,brightnessValue,alphaValue);
+    stroke(192,192,192,alphaValue);
+    strokeWeight(1);
+
+    beginShape();
+    let numPoints=floor(random(3,8));
+    for(let i=0;i<numPoints;i++){
+      let offsetX=random(-1,15);
+      let offsetY=random(-15,1);
+      curveVertex(this.pos.x+offsetX,this.pos.y+offsetY);
+    }
+    endShape(CLOSE);
+  }
+}
+
+function windowResized(){
+  resizeCanvas(windowWidth,windowHeight);
+  halfW=width*0.5;
+  halfH=height*0.5;
+}
+</script>
 </body>
 </html>
-
-
 
 
