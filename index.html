@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Art&Psiq®-APrtlt</title>
+
 <style>
 body,html{
   margin:0;
@@ -15,6 +16,7 @@ body,html{
 body{ touch-action:none; }
 </style>
 </head>
+
 <body>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
@@ -31,14 +33,19 @@ let maxSpeed=0.8;
 let audioStarted=false;
 let globalReverb;
 let erasePoint=null;
-let eraseRadiusSq=50*50;
 
 let halfW,halfH;
+let eraseRadiusSq=50*50;
+
+// 🔊 VOICE POOL (audio móvil estable)
+let voicePool=[];
+let voiceIndex=0;
+let VOICES=24;
 
 function setup(){
-  pixelDensity(1); // 🔥 clave móviles
-  createCanvas(windowWidth,windowHeight);
 
+  pixelDensity(1);
+  createCanvas(windowWidth,windowHeight);
   frameRate(60);
   noiseDetail(2,0.5);
 
@@ -53,6 +60,16 @@ function setup(){
 
   globalReverb=new p5.Reverb();
   globalReverb.set(0.2,0.3);
+
+  // 🔊 crear voces compartidas
+  for(let i=0;i<VOICES;i++){
+    let osc=new p5.Oscillator('sine');
+    osc.amp(0);
+    osc.disconnect();
+    osc.connect(globalReverb);
+    osc.start();
+    voicePool.push(osc);
+  }
 
   for(let i=0;i<700;i++){
     particles.push(new Particle());
@@ -95,7 +112,6 @@ function draw(){
       let dx=erasePoint.x-p.pos.x;
       let dy=erasePoint.y-p.pos.y;
       if(dx*dx+dy*dy<eraseRadiusSq){
-        p.muteOscillators();
         p.pos.set(random(width),random(height));
         p.playOscillators();
       }
@@ -109,12 +125,16 @@ function mouseMoved(){
   if(!erasePoint) erasePoint=createVector(mouseX,mouseY);
   else erasePoint.set(mouseX,mouseY);
 }
+
 function touchMoved(){
   if(!erasePoint) erasePoint=createVector(mouseX,mouseY);
   else erasePoint.set(mouseX,mouseY);
   return false;
 }
-function touchEnded(){ erasePoint=null; }
+
+function touchEnded(){
+  erasePoint=null;
+}
 
 function mousePressed(){
   if(!audioStarted){
@@ -125,25 +145,12 @@ function mousePressed(){
 }
 
 class Particle{
+
   constructor(){
     this.pos=createVector(random(width),random(height));
     this.vel=createVector(0,0);
     this.acc=createVector(0,0);
     this.maxSpeed=maxSpeed;
-    this.prevPos=this.pos.copy();
-
-    this.oscillators=[];
-    this.numOscillators=1;
-
-    for(let i=0;i<this.numOscillators;i++){
-      let osc=new p5.Oscillator('sine');
-      osc.freq(random(100,1000));
-      osc.amp(0);
-      osc.disconnect();
-      osc.connect(globalReverb);
-      osc.start();
-      this.oscillators.push(osc);
-    }
 
     this.shouldPlaySound=random(1)<0.09;
     this.soundDuration=random(0.01,0.07);
@@ -176,24 +183,23 @@ class Particle{
   }
 
   playOscillators(){
-    for(let osc of this.oscillators){
-      let frequencyMod=map(this.pos.y,0,height,1000,6000);
-      let amplitudeMod=map(this.pos.x,0,width,0,0.3);
 
-      osc.freq(frequencyMod);
-      osc.amp(amplitudeMod,0.01);
+    let osc=voicePool[voiceIndex];
+    voiceIndex=(voiceIndex+1)%VOICES;
 
-      setTimeout(()=>{ osc.amp(0,0.02); }, this.soundDuration*50);
-    }
-  }
+    let frequencyMod=map(this.pos.y,0,height,1000,6000);
+    let amplitudeMod=map(this.pos.x,0,width,0,0.3);
 
-  muteOscillators(){
-    for(let osc of this.oscillators){
-      osc.amp(0,0.1);
-    }
+    osc.freq(frequencyMod);
+    osc.amp(amplitudeMod,0.01);
+
+    setTimeout(()=>{
+      osc.amp(0,0.02);
+    }, this.soundDuration*50);
   }
 
   show(){
+
     let hueValue=map(sin(frameCount*0.090+this.pos.x*0.001),-1,1,280,360);
     let saturationValue=map(this.pos.y,0,height,50,100);
     let brightnessValue=map(sin(frameCount*0.03+this.pos.y*0.01),-1,1,70,100);
@@ -224,7 +230,7 @@ function windowResized(){
   halfH=height*0.5;
 }
 </script>
+
 </body>
 </html>
-
 
