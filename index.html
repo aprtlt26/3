@@ -5,114 +5,186 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Art&Psiq®-APrtlt</title>
 
-<style>
-body,html{
-  margin:0;
-  padding:0;
-  overflow:hidden;
-  background:rgb(210,209,209);
-  cursor:none;
-}
-body{ touch-action:none; }
-</style>
-</head>
-
-<body>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
-
 <script>
+
 let inc=0.05;
 let scl=10;
 let cols,rows;
 let zoff=0;
+
 let particles=[];
+
 let flowfield;
+
 let maxSpeed=0.8;
+
 let audioStarted=false;
+
 let globalReverb;
+
 let erasePoint=null;
 
 let halfW,halfH;
+
 let eraseRadiusSq=50*50;
 
-// 🔊 VOICE POOL (audio móvil estable)
+// MASTER AUDIO
+let masterVolume=0.3;
+
+let isMuted=false;
+
+// 🔊 VOICE POOL
 let voicePool=[];
+
 let voiceIndex=0;
+
 let VOICES=24;
 
 function setup(){
 
   pixelDensity(1);
+
   createCanvas(windowWidth,windowHeight);
+
   frameRate(60);
+
   noiseDetail(2,0.5);
 
   colorMode(HSB,320,900,100,100);
 
   cols=floor(width/scl);
+
   rows=floor(height/scl);
+
   flowfield=new Array(cols*rows);
 
   halfW=width*0.5;
+
   halfH=height*0.5;
 
   globalReverb=new p5.Reverb();
+
   globalReverb.set(0.2,0.3);
 
-  // 🔊 crear voces compartidas
+  // 🔊 voces
   for(let i=0;i<VOICES;i++){
+
     let osc=new p5.Oscillator('sine');
+
     osc.amp(0);
+
     osc.disconnect();
+
     osc.connect(globalReverb);
+
     osc.start();
+
     voicePool.push(osc);
   }
 
   for(let i=0;i<700;i++){
+
     particles.push(new Particle());
   }
 
   background(80);
+
   noLoop();
 
-  textSize(32);
-  fill(255);
-  textAlign(CENTER,CENTER);
-  text("clic",width/1,height/1);
+  initAudioUI();
 }
 
 function draw(){
-  if(!audioStarted) return;
+
+  // PANTALLA INICIAL
+  if(!audioStarted){
+
+    background(80);
+
+    push();
+
+    translate(width/2,height/2);
+
+    let pulse=sin(frameCount*0.04)*8;
+
+    // TEXTO
+    noStroke();
+
+    fill(255,180);
+
+    textAlign(CENTER,CENTER);
+
+    textSize(14);
+
+    text("click to activate sound",0,40+pulse);
+
+    // CURSOR
+    stroke(255,220);
+
+    strokeWeight(1.5);
+
+    line(-20+pulse*0.2,-20,-4,-4);
+
+    line(-4,-4,-10,10);
+
+    line(-4,-4,10,2);
+
+    // HALO
+    noFill();
+
+    stroke(255,80);
+
+    ellipse(0,0,50+pulse,50+pulse);
+
+    pop();
+
+    return;
+  }
 
   background(80,80);
 
   let yoff=0;
+
   for(let y=0;y<rows;y++){
+
     let xoff=0;
+
     for(let x=0;x<cols;x++){
+
       let index=x+y*cols;
+
       let angle=noise(xoff,yoff,zoff)*TWO_PI;
+
       let v=p5.Vector.fromAngle(angle);
+
       v.setMag(0.005);
+
       flowfield[index]=v;
+
       xoff+=inc;
     }
+
     yoff+=inc;
   }
 
   for(let p of particles){
+
     p.follow(flowfield);
+
     p.update();
+
     p.show();
 
     if(erasePoint){
+
       let dx=erasePoint.x-p.pos.x;
+
       let dy=erasePoint.y-p.pos.y;
+
       if(dx*dx+dy*dy<eraseRadiusSq){
+
         p.pos.set(random(width),random(height));
+
         p.playOscillators();
       }
     }
@@ -122,24 +194,44 @@ function draw(){
 }
 
 function mouseMoved(){
-  if(!erasePoint) erasePoint=createVector(mouseX,mouseY);
-  else erasePoint.set(mouseX,mouseY);
+
+  if(!erasePoint){
+
+    erasePoint=createVector(mouseX,mouseY);
+
+  }else{
+
+    erasePoint.set(mouseX,mouseY);
+  }
 }
 
 function touchMoved(){
-  if(!erasePoint) erasePoint=createVector(mouseX,mouseY);
-  else erasePoint.set(mouseX,mouseY);
+
+  if(!erasePoint){
+
+    erasePoint=createVector(mouseX,mouseY);
+
+  }else{
+
+    erasePoint.set(mouseX,mouseY);
+  }
+
   return false;
 }
 
 function touchEnded(){
+
   erasePoint=null;
 }
 
 function mousePressed(){
+
   if(!audioStarted){
+
     userStartAudio();
+
     audioStarted=true;
+
     loop();
   }
 }
@@ -147,37 +239,57 @@ function mousePressed(){
 class Particle{
 
   constructor(){
+
     this.pos=createVector(random(width),random(height));
+
     this.vel=createVector(0,0);
+
     this.acc=createVector(0,0);
+
     this.maxSpeed=maxSpeed;
 
     this.shouldPlaySound=random(1)<0.09;
+
     this.soundDuration=random(0.01,0.07);
+
     this.nextSoundTime=millis()+random(100,500);
   }
 
   follow(vectors){
+
     let x=floor(this.pos.x/scl);
+
     let y=floor(this.pos.y/scl);
+
     let index=x+y*cols;
+
     this.acc.add(vectors[index]);
   }
 
   update(){
+
     this.vel.add(this.acc);
+
     this.vel.limit(this.maxSpeed);
+
     this.pos.add(this.vel);
+
     this.acc.mult(0);
 
     if(this.pos.x>width) this.pos.x=0;
+
     if(this.pos.x<0) this.pos.x=width;
+
     if(this.pos.y>height) this.pos.y=0;
+
     if(this.pos.y<0) this.pos.y=height;
 
     let currentTime=millis();
+
     if(this.shouldPlaySound && currentTime>=this.nextSoundTime){
+
       this.playOscillators();
+
       this.nextSoundTime=currentTime+random(100,5000);
     }
   }
@@ -185,50 +297,243 @@ class Particle{
   playOscillators(){
 
     let osc=voicePool[voiceIndex];
+
     voiceIndex=(voiceIndex+1)%VOICES;
 
-    let frequencyMod=map(this.pos.y,0,height,1000,6000);
-    let amplitudeMod=map(this.pos.x,0,width,0,0.3);
+    let frequencyMod=
+      map(this.pos.y,0,height,1000,6000);
+
+    let amplitudeMod=
+      map(this.pos.x,0,width,0,0.3)
+      * masterVolume;
+
+    if(isMuted){
+
+      amplitudeMod=0;
+    }
 
     osc.freq(frequencyMod);
+
     osc.amp(amplitudeMod,0.01);
 
     setTimeout(()=>{
+
       osc.amp(0,0.02);
+
     }, this.soundDuration*50);
   }
 
   show(){
 
-    let hueValue=map(sin(frameCount*0.090+this.pos.x*0.001),-1,1,280,360);
-    let saturationValue=map(this.pos.y,0,height,50,100);
-    let brightnessValue=map(sin(frameCount*0.03+this.pos.y*0.01),-1,1,70,100);
+    let hueValue=
+      map(
+        sin(frameCount*0.090+this.pos.x*0.001),
+        -1,
+        1,
+        280,
+        360
+      );
+
+    let saturationValue=
+      map(this.pos.y,0,height,50,100);
+
+    let brightnessValue=
+      map(
+        sin(frameCount*0.03+this.pos.y*0.01),
+        -1,
+        1,
+        70,
+        100
+      );
 
     let dx=this.pos.x-halfW;
-    let dy=this.pos.y-halfH;
-    let distCenter=sqrt(dx*dx+dy*dy);
-    let alphaValue=map(distCenter,0,halfW,255,100);
 
-    fill(hueValue,saturationValue,brightnessValue,alphaValue);
+    let dy=this.pos.y-halfH;
+
+    let distCenter=sqrt(dx*dx+dy*dy);
+
+    let alphaValue=
+      map(distCenter,0,halfW,255,100);
+
+    fill(
+      hueValue,
+      saturationValue,
+      brightnessValue,
+      alphaValue
+    );
+
     stroke(192,192,192,alphaValue);
+
     strokeWeight(1);
 
     beginShape();
+
     let numPoints=floor(random(3,8));
+
     for(let i=0;i<numPoints;i++){
+
       let offsetX=random(-1,15);
+
       let offsetY=random(-15,1);
-      curveVertex(this.pos.x+offsetX,this.pos.y+offsetY);
+
+      curveVertex(
+        this.pos.x+offsetX,
+        this.pos.y+offsetY
+      );
     }
+
     endShape(CLOSE);
   }
 }
 
+// AUDIO UI
+function initAudioUI(){
+
+  const ui=document.createElement('div');
+
+  ui.id='audioUI';
+
+  ui.innerHTML=`
+
+    <button id="muteBtn">M</button>
+
+    <input
+      type="range"
+      id="masterSlider"
+      min="0"
+      max="1"
+      step="0.01"
+      value="0.3"
+    >
+
+  `;
+
+  document.body.appendChild(ui);
+
+  // STYLE
+  const style=document.createElement('style');
+
+  style.innerHTML=`
+
+    #audioUI{
+
+      position:fixed;
+
+      bottom:20px;
+
+      right:20px;
+
+      z-index:999999;
+
+      display:flex;
+
+      align-items:center;
+
+      gap:8px;
+
+      background:rgba(0,0,0,0.15);
+
+      backdrop-filter:blur(4px);
+
+      padding:8px 10px;
+
+      border-radius:20px;
+
+      border:1px solid rgba(255,255,255,0.1);
+    }
+
+    #masterSlider{
+
+      width:90px;
+
+      height:2px;
+
+      appearance:none;
+
+      background:#aaa;
+
+      outline:none;
+    }
+
+    #masterSlider::-webkit-slider-thumb{
+
+      appearance:none;
+
+      width:10px;
+
+      height:10px;
+
+      border-radius:50%;
+
+      background:white;
+
+      cursor:pointer;
+    }
+
+    #muteBtn{
+
+      width:22px;
+
+      height:22px;
+
+      border:none;
+
+      border-radius:50%;
+
+      background:#111;
+
+      color:white;
+
+      font-size:10px;
+
+      cursor:pointer;
+    }
+
+  `;
+
+  document.head.appendChild(style);
+
+  // EVENTS
+  const slider=
+    document.getElementById('masterSlider');
+
+  const muteBtn=
+    document.getElementById('muteBtn');
+
+  slider.addEventListener('input',e=>{
+
+    masterVolume=parseFloat(e.target.value);
+  });
+
+  muteBtn.addEventListener('click',()=>{
+
+    isMuted=!isMuted;
+
+    if(isMuted){
+
+      muteBtn.innerHTML='X';
+
+      for(let osc of voicePool){
+
+        osc.amp(0,0.05);
+      }
+
+    }else{
+
+      muteBtn.innerHTML='M';
+    }
+  });
+}
+
 function windowResized(){
+
   resizeCanvas(windowWidth,windowHeight);
+
   halfW=width*0.5;
+
   halfH=height*0.5;
 }
+
 </script>
 
 </body>
